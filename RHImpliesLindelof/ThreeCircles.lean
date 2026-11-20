@@ -1,14 +1,44 @@
-import RHImpliesLindelof.Defs
+import Mathlib.Analysis.CStarAlgebra.Classes
+import Mathlib.Analysis.Complex.Hadamard
 
-open Complex Set Metric
+/-!
+# Hadamard's three-circles theorem
 
-namespace Lindelof
+We deduce Hadamard's three-circles theorem from the three-lines theorem
+(`Complex.HadamardThreeLines.norm_le_interp_of_mem_verticalClosedStrip'`) by composing with the
+exponential map `w ↦ c + exp w`, which sends the vertical line `re w = log r` onto the circle of
+centre `c` and radius `r`.
 
-theorem threeCircles : ThreeCircles := by
-  intro g c r₁ r₂ r₃ R M₁ M₃ hr₁ h12 h23 h3R hM₁ hM₃ hg hb₁ hb₃ z hz
+## Main results
+
+* `Complex.norm_le_interp_of_mem_sphere`: if `g` is holomorphic on a ball containing the closed
+  annulus `r₁ ≤ dist z c ≤ r₃`, bounded by `M₁` on the inner circle and by `M₃` on the outer
+  circle, then on the circle of radius `r₂` it is bounded by `M₁ ^ (1 - θ) * M₃ ^ θ` with
+  `θ = log (r₂ / r₁) / log (r₃ / r₁)`.
+-/
+
+open Set Metric
+
+namespace Complex
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+
+/-- **Hadamard's three-circles theorem**. Let `g` be differentiable on the open ball of centre
+`c` and radius `R`, and let `0 < r₁ < r₂ < r₃ < R`. If `‖g‖ ≤ M₁` on the circle of radius `r₁`
+and `‖g‖ ≤ M₃` on the circle of radius `r₃`, then on the circle of radius `r₂` we have
+`‖g z‖ ≤ M₁ ^ (1 - θ) * M₃ ^ θ`, where `θ = log (r₂ / r₁) / log (r₃ / r₁)`. In other words,
+the logarithm of the maximum of `‖g‖` on the circle of radius `r` is a convex function of
+`log r`. -/
+theorem norm_le_interp_of_mem_sphere {g : ℂ → E} {c z : ℂ} {r₁ r₂ r₃ R M₁ M₃ : ℝ}
+    (hr₁ : 0 < r₁) (h12 : r₁ < r₂) (h23 : r₂ < r₃) (h3R : r₃ < R)
+    (hg : DifferentiableOn ℂ g (ball c R))
+    (hb₁ : ∀ z ∈ sphere c r₁, ‖g z‖ ≤ M₁) (hb₃ : ∀ z ∈ sphere c r₃, ‖g z‖ ≤ M₃)
+    (hz : z ∈ sphere c r₂) :
+    ‖g z‖ ≤ M₁ ^ (1 - Real.log (r₂ / r₁) / Real.log (r₃ / r₁)) *
+      M₃ ^ (Real.log (r₂ / r₁) / Real.log (r₃ / r₁)) := by
   have hr₂ : 0 < r₂ := hr₁.trans h12
   have hr₃ : 0 < r₃ := hr₂.trans h23
-  set F : ℂ → ℂ := fun w => g (c + exp w) with hF
+  set F : ℂ → E := fun w => g (c + exp w) with hF
   have hlu : Real.log r₁ < Real.log r₃ := Real.log_lt_log hr₁ (h12.trans h23)
   have hnorm : ∀ w : ℂ, dist (c + exp w) c = Real.exp w.re := by
     intro w
@@ -20,7 +50,8 @@ theorem threeCircles : ThreeCircles := by
     calc Real.exp w.re ≤ Real.exp (Real.log r₃) := Real.exp_le_exp.mpr hw
       _ = r₃ := Real.exp_log hr₃
       _ < R := h3R
-  have hdiff : DifferentiableOn ℂ F (HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) := by
+  have hdiff : DifferentiableOn ℂ F
+      (HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) := by
     intro w hw
     have hw' : w.re ≤ Real.log r₃ := hw.2
     have h1 : DifferentiableAt ℂ g (c + exp w) :=
@@ -28,7 +59,8 @@ theorem threeCircles : ThreeCircles := by
     have h2 : DifferentiableAt ℂ (fun w : ℂ => c + exp w) w :=
       (differentiableAt_const c).add differentiableAt_exp
     exact (h1.comp w h2).differentiableWithinAt
-  have hclosed : IsClosed (HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) :=
+  have hclosed :
+      IsClosed (HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) :=
     isClosed_Icc.preimage continuous_re
   have hsub : closure (HadamardThreeLines.verticalStrip (Real.log r₁) (Real.log r₃)) ⊆
       HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃) :=
@@ -39,7 +71,8 @@ theorem threeCircles : ThreeCircles := by
   have hcont : ContinuousOn g (closedBall c r₃) :=
     hg.continuousOn.mono (closedBall_subset_ball h3R)
   obtain ⟨C, hC⟩ := (isCompact_closedBall c r₃).exists_bound_of_continuousOn hcont
-  have hB : BddAbove ((norm ∘ F) '' HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) := by
+  have hB : BddAbove
+      ((norm ∘ F) '' HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃)) := by
     refine ⟨C, ?_⟩
     rintro _ ⟨w, hw, rfl⟩
     apply hC
@@ -49,12 +82,13 @@ theorem threeCircles : ThreeCircles := by
   have ha : ∀ w ∈ re ⁻¹' {Real.log r₁}, ‖F w‖ ≤ M₁ := by
     intro w hw
     apply hb₁
-    rw [hnorm, show w.re = Real.log r₁ from hw, Real.exp_log hr₁]
+    rw [mem_sphere, hnorm, show w.re = Real.log r₁ from hw, Real.exp_log hr₁]
   have hb : ∀ w ∈ re ⁻¹' {Real.log r₃}, ‖F w‖ ≤ M₃ := by
     intro w hw
     apply hb₃
-    rw [hnorm, show w.re = Real.log r₃ from hw, Real.exp_log hr₃]
+    rw [mem_sphere, hnorm, show w.re = Real.log r₃ from hw, Real.exp_log hr₃]
   -- the point
+  rw [mem_sphere] at hz
   have hzc : z - c ≠ 0 := by
     intro h
     rw [dist_eq_norm, h, norm_zero] at hz
@@ -63,13 +97,13 @@ theorem threeCircles : ThreeCircles := by
     rw [log_re, ← dist_eq_norm, hz]
   have hFz : F (log (z - c)) = g z := by
     simp only [hF, exp_log hzc, add_sub_cancel]
-  have hmemz : log (z - c) ∈ HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃) :=
+  have hmemz :
+      log (z - c) ∈ HadamardThreeLines.verticalClosedStrip (Real.log r₁) (Real.log r₃) :=
     ⟨by rw [hre]; exact (Real.log_lt_log hr₁ h12).le,
      by rw [hre]; exact (Real.log_lt_log hr₂ h23).le⟩
-  have key := HadamardThreeLines.norm_le_interp_of_mem_verticalClosedStrip' hlu hmemz hd hB ha hb
+  have key :=
+    HadamardThreeLines.norm_le_interp_of_mem_verticalClosedStrip' hlu hmemz hd hB ha hb
   rw [hFz, hre, ← Real.log_div hr₂.ne' hr₁.ne', ← Real.log_div hr₃.ne' hr₁.ne'] at key
   exact key
 
-end Lindelof
-
-#print axioms Lindelof.threeCircles
+end Complex

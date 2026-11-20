@@ -1,5 +1,7 @@
 # RH ⇒ Lindelöf in Lean 4
 
+[![CI](https://github.com/AIOvernight/rh-implies-lindelof/actions/workflows/ci.yml/badge.svg)](https://github.com/AIOvernight/rh-implies-lindelof/actions/workflows/ci.yml)
+
 A Lean 4 / Mathlib formalization of Littlewood's theorem: the Riemann Hypothesis implies the Lindelöf Hypothesis.
 
 ```lean
@@ -23,10 +25,10 @@ theorem lindelof_atBot_of_riemannHypothesis (hRH : RiemannHypothesis) :
 
 ## Verification status
 
-- `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`.
+- `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if either main theorem uses a non-standard axiom.
 - `#print axioms` on both theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all eight modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all six modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -56,16 +58,14 @@ The route avoids the functional equation and Stirling's formula.
 
 | File | Content |
 |---|---|
-| `Defs.lean` | Statements of the intermediate results |
 | `Growth.lean` | `‖ζ(s)‖ ≤ 25·|Im s|` for `1/4 ≤ Re s ≤ 4`, `|Im s| ≥ 1`, from `ζ(s) = s/(s−1) − s∫₁^∞ {x} x^{−s−1} dx` |
 | `LogZeta.lean` | Under RH, a holomorphic branch `g` of `log ζ` on discs centred at `2 + it`, with `‖g‖ ≤ C log t` by Borel–Carathéodory |
-| `ThreeCircles.lean` | Hadamard's three-circles theorem, deduced from Mathlib's three-lines theorem |
+| `ThreeCircles.lean` | Hadamard's three-circles theorem (`Complex.norm_le_interp_of_mem_sphere`), deduced from Mathlib's three-lines theorem |
 | `Littlewood.lean` | Three circles give `‖g‖ ≤ C (log t)^a` with `a < 1`, hence `ζ(σ + it) ≪ t^ε` for each fixed `σ > 1/2` |
-| `HalfStrip.lean` | A Phragmén–Lindelöf interpolation on a half-strip for functions of polynomial growth |
-| `Final.lean` | Interpolate between `σ = 1/4` and `σ = 1/2 + η`, then let `η → 0` |
-| `Main.lean` | The final statements, including `t → −∞` by conjugation symmetry |
+| `HalfStrip.lean` | A Phragmén–Lindelöf interpolation on a half-strip for functions of polynomial growth (`PhragmenLindelof.exists_norm_le_mul_rpow_interp_of_vertical_halfStrip`) |
+| `Main.lean` | Interpolate between `σ = 1/4` and `σ = 1/2 + η`, let `η → 0`; then `t → −∞` by conjugation symmetry |
 
-`ThreeCircles.lean` and `HalfStrip.lean` are independent of ζ and may be useful on their own.
+`ThreeCircles.lean` and `HalfStrip.lean` are independent of ζ and may be useful on their own. The three-circles theorem is stated for functions with values in any complex normed space.
 
 ## How it was produced
 

@@ -1,11 +1,29 @@
-import RHImpliesLindelof.Defs
+import RHImpliesLindelof.LogZeta
+import RHImpliesLindelof.ThreeCircles
+
+/-!
+# Littlewood's bound for `ζ` to the right of the critical line
+
+Assuming the Riemann Hypothesis, we show `ζ(σ + t * I) = O(t ^ ε)` for every fixed
+`1 / 2 < σ ≤ 1` and every `ε > 0`. The proof applies Hadamard's three-circles theorem
+(`Complex.norm_le_interp_of_mem_sphere`) to the logarithm of `ζ` constructed in
+`Lindelof.exists_log_riemannZeta_norm_le`, on three circles centred at `2 + t * I`: this gives
+`‖log ζ(σ + t * I)‖ ≤ C * (log t) ^ a` with `a < 1`, which is `≤ ε * log t + O(1)`.
+
+## Main results
+
+* `Lindelof.exists_norm_riemannZeta_le_mul_rpow_of_half_lt`: under RH, for `1 / 2 < σ ≤ 1` and
+  `ε > 0` there is `C > 0` with `‖ζ(σ + t * I)‖ ≤ C * t ^ ε` for all `t ≥ 3`.
+-/
 
 open Complex
 
 namespace Lindelof
 
-/-- Sublinear absorption: for `0 < a < 1`, `C * L^a ≤ ε * L + K` for all `L > 0`. -/
-private lemma absorb (C ε a : ℝ) (hC : 0 < C) (hε : 0 < ε) (ha0 : 0 < a) (ha1 : a < 1) :
+/-- A sublinear power is absorbed by a linear term: for `0 < a < 1` there is `K` such that
+`C * L ^ a ≤ ε * L + K` for all `L > 0`. -/
+private lemma exists_mul_rpow_le_mul_add {C ε a : ℝ} (hC : 0 < C) (hε : 0 < ε) (ha0 : 0 < a)
+    (ha1 : a < 1) :
     ∃ K : ℝ, ∀ L : ℝ, 0 < L → C * L ^ a ≤ ε * L + K := by
   set B : ℝ := (C / ε) ^ (1 / (1 - a)) with hB
   have hBpos : 0 < B := Real.rpow_pos_of_pos (div_pos hC hε) _
@@ -36,13 +54,16 @@ private lemma absorb (C ε a : ℝ) (hC : 0 < C) (hε : 0 < ε) (ha0 : 0 < a) (h
     have : 0 ≤ ε * L := (mul_pos hε hL).le
     linarith
 
-theorem zetaSmallRightOfHalf (hL : Lindelof.LogZetaBound) (h3 : Lindelof.ThreeCircles) :
-    Lindelof.ZetaSmallRightOfHalf := by
-  intro σ ε hσ hσ1 hε
+/-- **Littlewood's bound**. Under the Riemann Hypothesis, for every fixed `1 / 2 < σ ≤ 1` and
+every `ε > 0` there is a constant `C > 0` such that `‖ζ(σ + t * I)‖ ≤ C * t ^ ε` for all
+`t ≥ 3`. -/
+theorem exists_norm_riemannZeta_le_mul_rpow_of_half_lt (hRH : RiemannHypothesis) {σ ε : ℝ}
+    (hσ : 1 / 2 < σ) (hσ1 : σ ≤ 1) (hε : 0 < ε) :
+    ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 3 ≤ t → ‖riemannZeta (σ + t * I)‖ ≤ C * t ^ ε := by
   set δ : ℝ := (σ - 1 / 2) / 4 with hδ
   have hδ0 : 0 < δ := by rw [hδ]; linarith
   have hδ1 : δ < 1 / 4 := by rw [hδ]; linarith
-  obtain ⟨C, hC, hg⟩ := hL δ hδ0 hδ1
+  obtain ⟨C, hC, hg⟩ := exists_log_riemannZeta_norm_le hRH hδ0 hδ1
   -- radii
   have hr12 : (1 / 4 : ℝ) < 2 - σ := by linarith
   have hr23 : 2 - σ < 3 / 2 - 2 * δ := by rw [hδ]; linarith
@@ -56,7 +77,7 @@ theorem zetaSmallRightOfHalf (hL : Lindelof.LogZetaBound) (h3 : Lindelof.ThreeCi
     · exact div_lt_div_of_pos_right hr23 (by norm_num)
   have ha0 : 0 < a := div_pos hnum (hnum.trans hlt)
   have ha1 : a < 1 := (div_lt_one (hnum.trans hlt)).2 hlt
-  obtain ⟨K, hK⟩ := absorb C ε a hC hε ha0 ha1
+  obtain ⟨K, hK⟩ := exists_mul_rpow_le_mul_add hC hε ha0 ha1
   refine ⟨Real.exp K, Real.exp_pos K, fun t ht => ?_⟩
   obtain ⟨g, hgd, hgexp, hg3, hg1⟩ := hg t ht
   have htpos : 0 < t := by linarith
@@ -66,11 +87,11 @@ theorem zetaSmallRightOfHalf (hL : Lindelof.LogZetaBound) (h3 : Lindelof.ThreeCi
     have : (σ : ℂ) + t * I - (2 + t * I) = ((σ - 2 : ℝ) : ℂ) := by push_cast; ring
     rw [this, Complex.norm_real, Real.norm_eq_abs, abs_of_neg (by linarith)]
     ring
-  have hb := h3 g (2 + t * I) (1 / 4) (2 - σ) (3 / 2 - 2 * δ) (3 / 2 - δ) C (C * Real.log t)
-    (by norm_num) hr12 hr23 hr3R hC (mul_pos hC hlog) hgd
-    (fun z hz => hg1 z (by rw [Metric.mem_closedBall, hz]))
-    (fun z hz => hg3 z (by rw [Metric.mem_closedBall, hz]))
-    _ hdist
+  have hb := norm_le_interp_of_mem_sphere (M₁ := C) (M₃ := C * Real.log t)
+    (by norm_num) hr12 hr23 hr3R hgd
+    (fun z hz => hg1 z (Metric.sphere_subset_closedBall hz))
+    (fun z hz => hg3 z (Metric.sphere_subset_closedBall hz))
+    (Metric.mem_sphere.2 hdist)
   rw [← ha] at hb
   have hsimp : C ^ (1 - a) * (C * Real.log t) ^ a = C * Real.log t ^ a := by
     rw [Real.mul_rpow hC.le hlog.le, ← mul_assoc, ← Real.rpow_add hC]
@@ -86,5 +107,3 @@ theorem zetaSmallRightOfHalf (hL : Lindelof.LogZetaBound) (h3 : Lindelof.ThreeCi
       rw [Real.rpow_def_of_pos htpos, Real.exp_add, mul_comm ε, mul_comm]
 
 end Lindelof
-
-#print axioms Lindelof.zetaSmallRightOfHalf

@@ -1,13 +1,33 @@
-import RHImpliesLindelof.Defs
+import Mathlib.Analysis.Complex.BorelCaratheodory
+import Mathlib.Analysis.Complex.HasPrimitives
+import Mathlib.NumberTheory.EulerProduct.DirichletLSeries
+import RHImpliesLindelof.Growth
+
+/-!
+# A bounded branch of `log ζ` under the Riemann Hypothesis
+
+Assuming the Riemann Hypothesis, `ζ` has no zeros in the disc of centre `2 + t * I` and radius
+`3 / 2 - δ` (for `t ≥ 3`), so it has a holomorphic logarithm `g` there. The Borel–Carathéodory
+theorem, together with the polynomial growth of `ζ` and the Euler product on `3 / 2 ≤ re s`,
+bounds `g` on smaller concentric discs.
+
+## Main results
+
+* `Lindelof.norm_tsum_neg_log_one_sub_prime_cpow_le`: a uniform bound for the Euler-product
+  logarithm of `ζ` on `3 / 2 ≤ re s`.
+* `Lindelof.borelCaratheodory_closedBall`: the Borel–Carathéodory theorem on a disc with
+  arbitrary centre.
+* `Lindelof.exists_log_riemannZeta_norm_le`: under RH, a holomorphic logarithm `g` of `ζ` on the
+  disc of centre `2 + t * I` and radius `3 / 2 - δ`, with `‖g‖ ≤ C * log t` on the closed disc
+  of radius `3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`.
+-/
 
 open Complex Metric
 
-noncomputable section
-
 namespace Lindelof
 
-/-- Uniform bound for the Euler-product logarithm of `ζ` on `Re s ≥ 3/2`. -/
-lemma logZeta_euler_bound {s : ℂ} (hs : 3 / 2 ≤ s.re) :
+/-- Uniform bound for the Euler-product logarithm of `ζ` on `3 / 2 ≤ re s`. -/
+lemma norm_tsum_neg_log_one_sub_prime_cpow_le {s : ℂ} (hs : 3 / 2 ≤ s.re) :
     ‖∑' p : Nat.Primes, -Complex.log (1 - ((p : ℕ) : ℂ) ^ (-s))‖ ≤
       3 / 2 * ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) := by
   have hsum : Summable (fun p : Nat.Primes ↦ ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ)) :=
@@ -27,8 +47,9 @@ lemma logZeta_euler_bound {s : ℂ} (hs : 3 / 2 ≤ s.re) :
   rw [norm_neg]
   gcongr
 
-/-- Borel–Carathéodory on a disc centred at `c`, on a closed sub-disc. -/
-lemma borelCaratheodory_shift {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 < M)
+/-- The Borel–Carathéodory theorem on a disc centred at `c`: a bound for `‖f‖` on a closed
+sub-disc in terms of an upper bound for `re f` on the disc and of `‖f c‖`. -/
+lemma borelCaratheodory_closedBall {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 < M)
     (hf : DifferentiableOn ℂ f (ball c R)) (hre : ∀ z ∈ ball c R, (f z).re ≤ M)
     (hr : 0 ≤ r) (hrR : r < R) {z : ℂ} (hz : z ∈ closedBall c r) :
     ‖f z‖ ≤ 2 * M * r / (R - r) + ‖f c‖ * (R + r) / (R - r) := by
@@ -50,9 +71,18 @@ lemma borelCaratheodory_shift {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 
   have hfc : 0 ≤ ‖f c‖ := norm_nonneg _
   gcongr
 
-theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBound := by
-  obtain ⟨A, C₀, hA, hC₀, hgrow⟩ := hG
-  intro δ hδ hδ4
+/-- Under the Riemann Hypothesis, for every `0 < δ < 1 / 4` there is a constant `C` such that
+for all `t ≥ 3` the function `ζ` has a holomorphic logarithm `g` on the open disc of centre
+`2 + t * I` and radius `3 / 2 - δ`, satisfying `‖g‖ ≤ C * log t` on the closed disc of radius
+`3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`. -/
+theorem exists_log_riemannZeta_norm_le (hRH : RiemannHypothesis) {δ : ℝ} (hδ : 0 < δ)
+    (hδ4 : δ < 1 / 4) :
+    ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 3 ≤ t → ∃ g : ℂ → ℂ,
+      DifferentiableOn ℂ g (ball (2 + t * I) (3 / 2 - δ)) ∧
+      (∀ s ∈ ball (2 + t * I) (3 / 2 - δ), exp (g s) = riemannZeta s) ∧
+      (∀ s ∈ closedBall (2 + t * I) (3 / 2 - 2 * δ), ‖g s‖ ≤ C * Real.log t) ∧
+      (∀ s ∈ closedBall (2 + t * I) (1 / 4), ‖g s‖ ≤ C) := by
+  obtain ⟨A, C₀, hA, hC₀, hgrow⟩ := exists_norm_riemannZeta_le_mul_abs_im_rpow
   set K : ℝ := 3 / 2 * ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) with hKdef
   have hK : 0 ≤ K := by
     have : 0 ≤ ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) :=
@@ -101,7 +131,7 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
   have hcre : c.re = 2 := by simp [hc]
   have hg₀exp : Complex.exp g₀ = riemannZeta c :=
     riemannZeta_eulerProduct_exp_log (by rw [hcre]; norm_num)
-  have hg₀K : ‖g₀‖ ≤ K := logZeta_euler_bound (by rw [hcre]; norm_num)
+  have hg₀K : ‖g₀‖ ≤ K := norm_tsum_neg_log_one_sub_prime_cpow_le (by rw [hcre]; norm_num)
   obtain ⟨g, hgc, hgd⟩ := hfd.isExactOn_ball.with_val_at c g₀
   have hcB : c ∈ ball c (3 / 2 - δ) := mem_ball_self (by linarith)
   -- ζ * exp (-g) is constant
@@ -133,7 +163,8 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
     rw [← this, mul_assoc, ← Complex.exp_add, neg_add_cancel, Complex.exp_zero, mul_one]
   have hgdiff : DifferentiableOn ℂ g (ball c (3 / 2 - δ)) := fun s hs ↦
     (hgd s hs).differentiableAt.differentiableWithinAt
-  have hre_le : ∀ s ∈ ball c (3 / 2 - δ), ∀ X : ℝ, ‖riemannZeta s‖ ≤ X → (g s).re ≤ Real.log X := by
+  have hre_le : ∀ s ∈ ball c (3 / 2 - δ), ∀ X : ℝ, ‖riemannZeta s‖ ≤ X →
+      (g s).re ≤ Real.log X := by
     intro s hs X hX
     rw [← hexp s hs, Complex.norm_exp] at hX
     rw [Real.le_log_iff_exp_le ((Real.exp_pos _).trans_le hX)]
@@ -165,7 +196,7 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
       rw [hM, hLdef]
       push_cast at h
       linarith
-    have hbc := borelCaratheodory_shift (r := 3 / 2 - 2 * δ) hMpos (hgdiff.mono hsub) hre
+    have hbc := borelCaratheodory_closedBall (r := 3 / 2 - 2 * δ) hMpos (hgdiff.mono hsub) hre
       (by linarith) (by linarith) hs
     rw [hgc] at hbc
     have e1 : (3 / 2 - 3 * δ / 2) - (3 / 2 - 2 * δ) = δ / 2 := by ring
@@ -177,14 +208,16 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
     have s1 : 2 * M * (3 / 2 - 2 * δ) / (δ / 2) ≤ 6 * ((L + 2 * A + 1) * Real.log t) / δ := by
       rw [div_le_div_iff₀ hd2 hδ]
       nlinarith [mul_nonneg hMpos.le hδ.le, mul_le_mul_of_nonneg_right hMle hδ.le]
-    have s2 : ‖g₀‖ * (3 / 2 - 3 * δ / 2 + (3 / 2 - 2 * δ)) / (δ / 2) ≤ 6 * (K * Real.log t) / δ := by
+    have s2 : ‖g₀‖ * (3 / 2 - 3 * δ / 2 + (3 / 2 - 2 * δ)) / (δ / 2) ≤
+        6 * (K * Real.log t) / δ := by
       rw [div_le_div_iff₀ hd2 hδ]
       have : K ≤ K * Real.log t := by nlinarith
       have h' : ‖g₀‖ ≤ K * Real.log t := hg₀K.trans this
       nlinarith [mul_nonneg (norm_nonneg g₀) hδ.le, mul_le_mul_of_nonneg_right h' hδ.le,
         norm_nonneg g₀]
     have s3 : 0 ≤ (5 * K + 2) * Real.log t := by positivity
-    calc _ ≤ 6 * ((L + 2 * A + 1) * Real.log t) / δ + 6 * (K * Real.log t) / δ := add_le_add s1 s2
+    calc _ ≤ 6 * ((L + 2 * A + 1) * Real.log t) / δ + 6 * (K * Real.log t) / δ :=
+          add_le_add s1 s2
       _ ≤ (6 * (L + 2 * A + 1 + K) / δ + (5 * K + 2)) * Real.log t := by
         have : 6 * ((L + 2 * A + 1) * Real.log t) / δ + 6 * (K * Real.log t) / δ
             = 6 * (L + 2 * A + 1 + K) / δ * Real.log t := by ring
@@ -201,11 +234,12 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
       have hzre : 3 / 2 ≤ z.re := by linarith [h1.1]
       have hb : ‖riemannZeta z‖ ≤ Real.exp K := by
         rw [← riemannZeta_eulerProduct_exp_log (by linarith), Complex.norm_exp]
-        exact Real.exp_le_exp.mpr ((re_le_norm _).trans (logZeta_euler_bound hzre))
+        exact Real.exp_le_exp.mpr
+          ((re_le_norm _).trans (norm_tsum_neg_log_one_sub_prime_cpow_le hzre))
       have := hre_le z hzB _ hb
       rw [Real.log_exp] at this
       linarith
-    have hbc := borelCaratheodory_shift (r := 1 / 4) (by positivity) (hgdiff.mono hsub) hre
+    have hbc := borelCaratheodory_closedBall (r := 1 / 4) (by positivity) (hgdiff.mono hsub) hre
       (by norm_num) (by norm_num) hs
     rw [hgc] at hbc
     refine hbc.trans ?_
@@ -216,5 +250,3 @@ theorem logZetaBound (hRH : RiemannHypothesis) (hG : ZetaPolyGrowth) : LogZetaBo
     linarith
 
 end Lindelof
-
-#print axioms Lindelof.logZetaBound
