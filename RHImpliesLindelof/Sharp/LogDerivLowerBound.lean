@@ -1,5 +1,6 @@
+import Mathlib.Analysis.Complex.HasPrimitives
 import Mathlib.Analysis.Complex.Liouville
-import RHImpliesLindelof.General
+import RHImpliesLindelof.BorelCaratheodory
 
 /-!
 # A one-sided bound for the logarithmic derivative of a holomorphic function

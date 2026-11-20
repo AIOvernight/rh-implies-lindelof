@@ -1,6 +1,6 @@
-import Mathlib.Analysis.Complex.BorelCaratheodory
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Complex.HasPrimitives
+import RHImpliesLindelof.BorelCaratheodory
 import RHImpliesLindelof.HalfStrip
 import RHImpliesLindelof.ThreeCircles
 
@@ -24,8 +24,6 @@ Phragmén–Lindelöf principle in a half-strip.
 
 ## Main results
 
-* `Lindelof.borelCaratheodory_closedBall`: the Borel–Carathéodory theorem on a disc with
-  arbitrary centre.
 * `Lindelof.exists_log_norm_le_of_ne_zero`: a holomorphic logarithm `g` of `F` on the disc of
   centre `2 + t * I` and radius `3 / 2 - δ`, with `‖g‖ ≤ C * log t` on the closed disc of radius
   `3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`.
@@ -37,30 +35,6 @@ Phragmén–Lindelöf principle in a half-strip.
 open Complex Metric
 
 namespace Lindelof
-
-/-- The Borel–Carathéodory theorem on a disc centred at `c`: a bound for `‖f‖` on a closed
-sub-disc in terms of an upper bound for `re f` on the disc and of `‖f c‖`. -/
-lemma borelCaratheodory_closedBall {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 < M)
-    (hf : DifferentiableOn ℂ f (ball c R)) (hre : ∀ z ∈ ball c R, (f z).re ≤ M)
-    (hr : 0 ≤ r) (hrR : r < R) {z : ℂ} (hz : z ∈ closedBall c r) :
-    ‖f z‖ ≤ 2 * M * r / (R - r) + ‖f c‖ * (R + r) / (R - r) := by
-  have hR : 0 < R := hr.trans_lt hrR
-  have hmaps : Set.MapsTo (fun w : ℂ ↦ w + c) (ball 0 R) (ball c R) := by
-    intro w hw
-    simpa [dist_eq_norm] using hw
-  have hF : DifferentiableOn ℂ (fun w : ℂ ↦ f (w + c)) (ball 0 R) :=
-    hf.comp (by fun_prop) hmaps
-  have hx : ‖z - c‖ ≤ r := by simpa [dist_eq_norm] using hz
-  have hzc : z - c ∈ ball (0 : ℂ) R := by
-    simpa using hx.trans_lt hrR
-  have key := Complex.borelCaratheodory (f := fun w : ℂ ↦ f (w + c)) hM hF
-    (fun w hw ↦ hre _ (hmaps hw)) hR hzc
-  simp only [sub_add_cancel, zero_add] at key
-  refine key.trans ?_
-  have hd : 0 < R - r := by linarith
-  have hx0 : 0 ≤ ‖z - c‖ := norm_nonneg _
-  have hfc : 0 ≤ ‖f c‖ := norm_nonneg _
-  gcongr
 
 /-- In the region `1 ≤ im s`, let `F` be holomorphic and zero-free on `1 / 2 < re s`, of
 polynomial growth in the strip `1 / 4 ≤ re s ≤ 4`, and with a logarithm bounded by `K` on

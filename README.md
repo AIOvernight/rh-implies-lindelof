@@ -47,7 +47,7 @@ together with `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t �
 - `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if any main theorem uses a non-standard axiom.
 - `#print axioms` on all five theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all eleven modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all twelve modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -85,6 +85,7 @@ lake env leanchecker RHImpliesLindelof.Main
 |---|---|
 | `ThreeCircles.lean` | Hadamard's three-circles theorem (`Complex.norm_le_interp_of_mem_sphere`), deduced from Mathlib's three-lines theorem, for functions with values in a complex normed space |
 | `HalfStrip.lean` | Phragmén–Lindelöf interpolation on a half-strip for functions of polynomial growth (`PhragmenLindelof.exists_norm_le_mul_rpow_interp_of_vertical_halfStrip`) |
+| `BorelCaratheodory.lean` | The Borel–Carathéodory theorem on a disc with arbitrary centre |
 | `General.lean` | Steps 2–4 for an abstract `F`: `Lindelof.isBigO_rpow_of_ne_zero` |
 | `Growth.lean` | `‖ζ(s)‖ ≤ 25·|Im s|` in the strip, from `ζ(s) = s/(s−1) − s∫₁^∞ {x} x^{−s−1} dx` |
 | `LogZeta.lean` | Euler-product bound for `log ζ` on `Re s ≥ 3/2`; non-vanishing of ζ off the critical line under RH |
@@ -95,7 +96,7 @@ lake env leanchecker RHImpliesLindelof.Main
 | `Sharp/LogDerivZeta.lean` | Under RH, the lower bound for `Re ζ'/ζ` and its decay away from the critical line |
 | `Sharp/Main.lean` | The sharper bound for ζ |
 
-`ThreeCircles.lean`, `HalfStrip.lean` and `Sharp/LogDerivLowerBound.lean` do not mention ζ and may be useful on their own.
+`ThreeCircles.lean`, `HalfStrip.lean`, `BorelCaratheodory.lean` and `Sharp/LogDerivLowerBound.lean` are general complex analysis: they do not mention ζ and import nothing from this repository beyond each other (the last one imports only `BorelCaratheodory.lean`).
 
 ## How it was produced
 
