@@ -16,11 +16,12 @@ jobs:
 
       - name: No sorry or escape hatches in the sources
         run: |
-          ! grep -rnE "sorry|admit|^\s*axiom |native_decide|unsafe|implemented_by|@\[extern|opaque|set_option" \
+          ! grep -rnE --include='*.lean' "sorry|admit|^\s*axiom |native_decide|unsafe|implemented_by|@\[extern|opaque|set_option" \
             RHImpliesLindelof RHImpliesLindelof.lean
 
       - name: Axioms of the main theorems
         run: |
-          lake env lean Check.lean | tee axioms.txt
-          test "$(wc -l < axioms.txt)" -eq 4
-          ! grep -v "depends on axioms: \[propext, Classical.choice, Quot.sound\]$" axioms.txt
+          lake env lean Check.lean | tee axioms.raw
+          tr '\n' ' ' < axioms.raw | tr -s ' ' > axioms.txt
+          test "$(grep -o "depends on axioms" axioms.txt | wc -l)" -eq 5
+          test "$(grep -o "depends on axioms: \[propext, Classical.choice, Quot.sound\]" axioms.txt | wc -l)" -eq 5

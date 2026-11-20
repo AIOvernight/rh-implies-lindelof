@@ -4,3 +4,4 @@ import RHImpliesLindelof
 #print axioms lindelof_atBot_of_riemannHypothesis
 #print axioms DirichletCharacter.lindelof_of_LFunction_ne_zero
 #print axioms DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero
+#print axioms exists_norm_riemannZeta_le_exp_log_div_log_log_of_riemannHypothesis

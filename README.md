@@ -26,21 +26,30 @@ theorem DirichletCharacter.lindelof_of_LFunction_ne_zero {N : ℕ} [NeZero N]
 
 (and `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t → −∞`).
 
+Littlewood's sharper bound for ζ:
+
+```lean
+theorem exists_norm_riemannZeta_le_exp_log_div_log_log_of_riemannHypothesis
+    (hRH : RiemannHypothesis) :
+    ∃ C : ℝ, ∀ᶠ t : ℝ in Filter.atTop,
+      ‖riemannZeta (1 / 2 + t * I)‖ ≤ Real.exp (C * Real.log t / Real.log (Real.log t))
+```
+
 `RiemannHypothesis`, `riemannZeta` and `DirichletCharacter.LFunction` are Mathlib's own definitions. The statements use nothing defined in this repository.
 
 ## What this is, and what it is not
 
 - **It is a conditional theorem.** It says "if RH, then Lindelöf". It does not prove RH and does not prove Lindelöf.
 - **The mathematics is classical.** The implication is usually attributed to Littlewood (1912); a textbook account is Chapter XIV of Titchmarsh, *The Theory of the Riemann Zeta-Function*. The contribution here is the machine-checked proof.
-- **It covers ζ and Dirichlet L-functions of non-trivial characters, as `t → +∞` and as `t → −∞`.** For L-functions this is the `t`-aspect for a fixed character; the implied constant depends on the character. Littlewood's sharper bound `exp(C log t / log log t)` and the conductor aspect are not included.
+- **It covers ζ and Dirichlet L-functions of non-trivial characters, as `t → +∞` and as `t → −∞`.** For L-functions this is the `t`-aspect for a fixed character; the implied constant depends on the character. For ζ it also gives Littlewood's sharper bound `exp(C log t / log log t)` as `t → +∞`. The sharper bound for L-functions and the conductor aspect are not included.
 - **Novelty.** We searched Mathlib, the PrimeNumberTheoremAnd project (commit `a4fb698`, 2026-11-14), and GitHub code search, and found no existing Lean formalization of this implication. That is a bounded search, not a guarantee.
 
 ## Verification status
 
 - `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if any main theorem uses a non-standard axiom.
-- `#print axioms` on all four theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
+- `#print axioms` on all five theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all nine modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all twelve modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -58,6 +67,9 @@ Expected output of the last command:
 'lindelof_atBot_of_riemannHypothesis' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DirichletCharacter.lindelof_of_LFunction_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'exists_norm_riemannZeta_le_exp_log_div_log_log_of_riemannHypothesis' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 ```
 
 To replay a module through the kernel (run one module at a time; do not pass the root module `RHImpliesLindelof`, which made the checker use tens of GB of memory in our runs):
@@ -68,7 +80,7 @@ lake env leanchecker RHImpliesLindelof.Main
 
 ## Proof outline
 
-The route avoids the functional equation and Stirling's formula.
+The route avoids the functional equation and Stirling's formula. The sharp bound uses a different argument, through `ζ'/ζ` instead of `log ζ`; a paper proof with all constants tracked is in `RHImpliesLindelof/Sharp/NOTES.md`.
 
 | File | Content |
 |---|---|
@@ -81,6 +93,9 @@ The route avoids the functional equation and Stirling's formula.
 | `Dirichlet/General.lean` | The same three steps for an abstract `F` that is holomorphic, of polynomial growth, zero-free for `Re s > 1/2` and has a bounded logarithm for `Re s ≥ 3/2` |
 | `Dirichlet/Growth.lean` | `‖L(s, χ)‖ ≤ 20(N+1)·|Im s|` in the strip, from bounded partial sums of `χ` and Abel summation |
 | `Dirichlet/Main.lean` | Euler-product logarithm bound and the two theorems for `L(s, χ)` |
+| `Sharp/LogDerivLowerBound.lean` | A one-sided Landau lemma: a lower bound for `Re f'/f` to the right of the zeros of `f`, by dividing out zeros with Blaschke factors |
+| `Sharp/LogDerivZeta.lean` | Under RH, `Re ζ'/ζ(s) ≥ −A log t` for `Re s > 1/2`, and its decay away from the critical line via three circles |
+| `Sharp/Main.lean` | Integrate `Re ζ'/ζ` towards the critical line to get the sharp bound |
 
 `ThreeCircles.lean` and `HalfStrip.lean` are independent of ζ and may be useful on their own. The three-circles theorem is stated for functions with values in any complex normed space.
 
