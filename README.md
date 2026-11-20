@@ -73,4 +73,9 @@ The proof strategy and the interface between the pieces were written by Claude (
 
 ## Context
 
-This was written on 2026-11-20, the day Levent Alpöge announced a Lean formalization of a proof of RH. This repository does not depend on that work and takes no position on its correctness: RH appears here only as a hypothesis.
+This was written on 2026-11-20, the day Levent Alpöge announced a Lean formalization of a proof of RH. That announcement is the motivation: **assuming his proof is correct, the Lindelöf Hypothesis follows from the theorem in this repository.** His main theorem and our hypothesis are the same Mathlib statement, `RiemannHypothesis`, so combining the two is a one-line application.
+
+Two things should be kept apart:
+
+- **What is proved here** is only the implication RH ⇒ Lindelöf. It does not import his code and it remains true whether or not his proof is correct.
+- **What we assume, and have not checked,** is the correctness of his proof. We have not built or audited his formalization, and we have not compiled the combination of the two. Until his proof is independently confirmed, Lindelöf remains conditional.
