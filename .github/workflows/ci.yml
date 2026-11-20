@@ -22,5 +22,5 @@ jobs:
       - name: Axioms of the main theorems
         run: |
           lake env lean Check.lean | tee axioms.txt
-          test "$(wc -l < axioms.txt)" -eq 2
+          test "$(wc -l < axioms.txt)" -eq 4
           ! grep -v "depends on axioms: \[propext, Classical.choice, Quot.sound\]$" axioms.txt

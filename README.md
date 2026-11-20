@@ -14,21 +14,33 @@ theorem lindelof_atBot_of_riemannHypothesis (hRH : RiemannHypothesis) :
       (fun t : ℝ => riemannZeta (1 / 2 + t * I)) =O[Filter.atBot] fun t : ℝ => |t| ^ ε
 ```
 
-`RiemannHypothesis` and `riemannZeta` are Mathlib's own definitions. The statements use nothing defined in this repository.
+The same for Dirichlet L-functions, assuming the corresponding zero-free half-plane:
+
+```lean
+theorem DirichletCharacter.lindelof_of_LFunction_ne_zero {N : ℕ} [NeZero N]
+    (χ : DirichletCharacter ℂ N) (hχ : χ ≠ 1)
+    (hGRH : ∀ s : ℂ, 1 / 2 < s.re → LFunction χ s ≠ 0) :
+    ∀ ε : ℝ, 0 < ε →
+      (fun t : ℝ => LFunction χ (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε
+```
+
+(and `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t → −∞`).
+
+`RiemannHypothesis`, `riemannZeta` and `DirichletCharacter.LFunction` are Mathlib's own definitions. The statements use nothing defined in this repository.
 
 ## What this is, and what it is not
 
 - **It is a conditional theorem.** It says "if RH, then Lindelöf". It does not prove RH and does not prove Lindelöf.
 - **The mathematics is classical.** The implication is usually attributed to Littlewood (1912); a textbook account is Chapter XIV of Titchmarsh, *The Theory of the Riemann Zeta-Function*. The contribution here is the machine-checked proof.
-- **It covers ζ, as `t → +∞` and as `t → −∞`.** Dirichlet L-functions and Littlewood's sharper bound `exp(C log t / log log t)` are not included.
+- **It covers ζ and Dirichlet L-functions of non-trivial characters, as `t → +∞` and as `t → −∞`.** For L-functions this is the `t`-aspect for a fixed character; the implied constant depends on the character. Littlewood's sharper bound `exp(C log t / log log t)` and the conductor aspect are not included.
 - **Novelty.** We searched Mathlib, the PrimeNumberTheoremAnd project (commit `a4fb698`, 2026-11-14), and GitHub code search, and found no existing Lean formalization of this implication. That is a bounded search, not a guarantee.
 
 ## Verification status
 
-- `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if either main theorem uses a non-standard axiom.
-- `#print axioms` on both theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
+- `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if any main theorem uses a non-standard axiom.
+- `#print axioms` on all four theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all six modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all nine modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -44,6 +56,8 @@ Expected output of the last command:
 ```
 'lindelof_of_riemannHypothesis' depends on axioms: [propext, Classical.choice, Quot.sound]
 'lindelof_atBot_of_riemannHypothesis' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DirichletCharacter.lindelof_of_LFunction_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
 To replay a module through the kernel (run one module at a time; do not pass the root module `RHImpliesLindelof`, which made the checker use tens of GB of memory in our runs):
@@ -64,6 +78,9 @@ The route avoids the functional equation and Stirling's formula.
 | `Littlewood.lean` | Three circles give `‖g‖ ≤ C (log t)^a` with `a < 1`, hence `ζ(σ + it) ≪ t^ε` for each fixed `σ > 1/2` |
 | `HalfStrip.lean` | A Phragmén–Lindelöf interpolation on a half-strip for functions of polynomial growth (`PhragmenLindelof.exists_norm_le_mul_rpow_interp_of_vertical_halfStrip`) |
 | `Main.lean` | Interpolate between `σ = 1/4` and `σ = 1/2 + η`, let `η → 0`; then `t → −∞` by conjugation symmetry |
+| `Dirichlet/General.lean` | The same three steps for an abstract `F` that is holomorphic, of polynomial growth, zero-free for `Re s > 1/2` and has a bounded logarithm for `Re s ≥ 3/2` |
+| `Dirichlet/Growth.lean` | `‖L(s, χ)‖ ≤ 20(N+1)·|Im s|` in the strip, from bounded partial sums of `χ` and Abel summation |
+| `Dirichlet/Main.lean` | Euler-product logarithm bound and the two theorems for `L(s, χ)` |
 
 `ThreeCircles.lean` and `HalfStrip.lean` are independent of ζ and may be useful on their own. The three-circles theorem is stated for functions with values in any complex normed space.
 
@@ -73,7 +90,7 @@ The proof strategy and the interface between the pieces were written by Claude (
 
 ## Context
 
-This was written on 2026-11-20, the day Levent Alpöge announced a Lean formalization of a proof of RH. That announcement is the motivation: **assuming his proof is correct, the Lindelöf Hypothesis follows from the theorem in this repository.** His main theorem and our hypothesis are the same Mathlib statement, `RiemannHypothesis`, so combining the two is a one-line application.
+This was written on 2026-11-20, the day Levent Alpöge announced a Lean formalization of a proof of RH. That announcement is the motivation: **assuming his proof is correct, the Lindelöf Hypothesis follows from the theorem in this repository.** His main theorem and our hypothesis are the same Mathlib statement, `RiemannHypothesis`, so combining the two is a one-line application. For Dirichlet L-functions, his statement of non-vanishing for `Re s > 1/2` gives our hypothesis `hGRH` for every `χ ≠ 1`.
 
 Two things should be kept apart:
 

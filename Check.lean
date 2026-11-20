@@ -2,3 +2,5 @@ import RHImpliesLindelof
 
 #print axioms lindelof_of_riemannHypothesis
 #print axioms lindelof_atBot_of_riemannHypothesis
+#print axioms DirichletCharacter.lindelof_of_LFunction_ne_zero
+#print axioms DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero

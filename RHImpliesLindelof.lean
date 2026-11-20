@@ -1,1 +1,2 @@
 import RHImpliesLindelof.Main
+import RHImpliesLindelof.Dirichlet.Main
