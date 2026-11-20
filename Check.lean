@@ -1,0 +1,4 @@
+import RHImpliesLindelof
+
+#print axioms lindelof_of_riemannHypothesis
+#print axioms lindelof_atBot_of_riemannHypothesis
