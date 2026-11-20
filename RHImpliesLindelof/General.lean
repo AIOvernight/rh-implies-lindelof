@@ -1,25 +1,31 @@
+import Mathlib.Analysis.Complex.BorelCaratheodory
+import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Complex.HasPrimitives
 import RHImpliesLindelof.HalfStrip
-import RHImpliesLindelof.LogZeta
 import RHImpliesLindelof.ThreeCircles
 
 /-!
 # The Lindelöf bound for a zero-free function with a bounded logarithm far to the right
 
-This file isolates the analytic core of Littlewood's proof that the Riemann Hypothesis implies
-the Lindelöf Hypothesis, for an abstract function `F : ℂ → ℂ` such that
+This file contains the analytic core of Littlewood's proof that the Riemann Hypothesis implies
+the Lindelöf Hypothesis, for an abstract function `F : ℂ → ℂ`. All hypotheses are only required
+in the upper region `1 ≤ im s`, so that they hold both for Dirichlet `L`-functions and for `ζ`
+(whose pole and trivial zeros lie on the real axis):
 
-* `F` is holomorphic on `1 / 4 ≤ re s`;
+* `F` is holomorphic on `1 / 4 ≤ re s`, `1 ≤ im s`;
 * `‖F s‖ ≤ C₀ * (im s) ^ A` on `1 / 4 ≤ re s ≤ 4`, `1 ≤ im s`;
-* `F` does not vanish on `1 / 2 < re s`;
-* on `3 / 2 ≤ re s`, `F s` has a logarithm of norm at most `K` (in practice, the logarithm of an
-  absolutely convergent Euler product).
+* `F` does not vanish on `1 / 2 < re s`, `1 ≤ im s`;
+* on `3 / 2 ≤ re s`, `1 ≤ im s`, `F s` has a logarithm of norm at most `K` (in practice, the
+  logarithm of an absolutely convergent Euler product).
 
-The three steps are the same as for `ζ`: a holomorphic logarithm of `F` on discs centred at
-`2 + t * I`, bounded by the Borel–Carathéodory theorem; Hadamard's three-circles theorem;
-and the Phragmén–Lindelöf principle in a half-strip.
+The proof has three steps: a holomorphic logarithm of `F` on discs centred at `2 + t * I`,
+bounded by the Borel–Carathéodory theorem; Hadamard's three-circles theorem; and the
+Phragmén–Lindelöf principle in a half-strip.
 
 ## Main results
 
+* `Lindelof.borelCaratheodory_closedBall`: the Borel–Carathéodory theorem on a disc with
+  arbitrary centre.
 * `Lindelof.exists_log_norm_le_of_ne_zero`: a holomorphic logarithm `g` of `F` on the disc of
   centre `2 + t * I` and radius `3 / 2 - δ`, with `‖g‖ ≤ C * log t` on the closed disc of radius
   `3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`.
@@ -32,17 +38,42 @@ open Complex Metric
 
 namespace Lindelof
 
-/-- Let `F` be holomorphic and zero-free on `1 / 2 < re s`, of polynomial growth in the strip
-`1 / 4 ≤ re s ≤ 4`, and with a logarithm bounded by `K` on `3 / 2 ≤ re s`. Then for every
+/-- The Borel–Carathéodory theorem on a disc centred at `c`: a bound for `‖f‖` on a closed
+sub-disc in terms of an upper bound for `re f` on the disc and of `‖f c‖`. -/
+lemma borelCaratheodory_closedBall {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 < M)
+    (hf : DifferentiableOn ℂ f (ball c R)) (hre : ∀ z ∈ ball c R, (f z).re ≤ M)
+    (hr : 0 ≤ r) (hrR : r < R) {z : ℂ} (hz : z ∈ closedBall c r) :
+    ‖f z‖ ≤ 2 * M * r / (R - r) + ‖f c‖ * (R + r) / (R - r) := by
+  have hR : 0 < R := hr.trans_lt hrR
+  have hmaps : Set.MapsTo (fun w : ℂ ↦ w + c) (ball 0 R) (ball c R) := by
+    intro w hw
+    simpa [dist_eq_norm] using hw
+  have hF : DifferentiableOn ℂ (fun w : ℂ ↦ f (w + c)) (ball 0 R) :=
+    hf.comp (by fun_prop) hmaps
+  have hx : ‖z - c‖ ≤ r := by simpa [dist_eq_norm] using hz
+  have hzc : z - c ∈ ball (0 : ℂ) R := by
+    simpa using hx.trans_lt hrR
+  have key := Complex.borelCaratheodory (f := fun w : ℂ ↦ f (w + c)) hM hF
+    (fun w hw ↦ hre _ (hmaps hw)) hR hzc
+  simp only [sub_add_cancel, zero_add] at key
+  refine key.trans ?_
+  have hd : 0 < R - r := by linarith
+  have hx0 : 0 ≤ ‖z - c‖ := norm_nonneg _
+  have hfc : 0 ≤ ‖f c‖ := norm_nonneg _
+  gcongr
+
+/-- In the region `1 ≤ im s`, let `F` be holomorphic and zero-free on `1 / 2 < re s`, of
+polynomial growth in the strip `1 / 4 ≤ re s ≤ 4`, and with a logarithm bounded by `K` on
+`3 / 2 ≤ re s`. Then for every
 `0 < δ < 1 / 4` there is a constant `C` such that for all `t ≥ 3` the function `F` has a
 holomorphic logarithm `g` on the open disc of centre `2 + t * I` and radius `3 / 2 - δ`,
 satisfying `‖g‖ ≤ C * log t` on the closed disc of radius `3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the
 closed disc of radius `1 / 4`. -/
 theorem exists_log_norm_le_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0 ≤ A) (hC₀ : 0 < C₀)
-    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → DifferentiableAt ℂ F s)
+    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → 1 ≤ s.im → DifferentiableAt ℂ F s)
     (hgrow : ∀ s : ℂ, 1 / 4 ≤ s.re → s.re ≤ 4 → 1 ≤ s.im → ‖F s‖ ≤ C₀ * s.im ^ A)
-    (hne : ∀ s : ℂ, 1 / 2 < s.re → F s ≠ 0)
-    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) {δ : ℝ} (hδ : 0 < δ)
+    (hne : ∀ s : ℂ, 1 / 2 < s.re → 1 ≤ s.im → F s ≠ 0)
+    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → 1 ≤ s.im → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) {δ : ℝ} (hδ : 0 < δ)
     (hδ4 : δ < 1 / 4) :
     ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 3 ≤ t → ∃ g : ℂ → ℂ,
       DifferentiableOn ℂ g (ball (2 + t * I) (3 / 2 - δ)) ∧
@@ -50,7 +81,7 @@ theorem exists_log_norm_le_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0
       (∀ s ∈ closedBall (2 + t * I) (3 / 2 - 2 * δ), ‖g s‖ ≤ C * Real.log t) ∧
       (∀ s ∈ closedBall (2 + t * I) (1 / 4), ‖g s‖ ≤ C) := by
   have hK : 0 ≤ K := by
-    obtain ⟨w, -, hw⟩ := hlog 2 (by norm_num)
+    obtain ⟨w, -, hw⟩ := hlog (2 + I) (by norm_num) (by simp)
     exact (norm_nonneg w).trans hw
   set L : ℝ := |Real.log C₀| with hLdef
   have hL : 0 ≤ L := abs_nonneg _
@@ -74,18 +105,23 @@ theorem exists_log_norm_le_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0
     have hg := (hgeo s hs).1
     rw [abs_lt] at hg
     linarith [hg.1]
-  have hne0 : ∀ s ∈ ball c (3 / 2 - δ), F s ≠ 0 := fun s hs ↦ hne s (hre12 s hs)
+  have him1 : ∀ s ∈ ball c (3 / 2 - δ), 1 ≤ s.im := by
+    intro s hs
+    have hg := (hgeo s hs).2
+    rw [abs_lt] at hg
+    linarith [hg.1]
+  have hne0 : ∀ s ∈ ball c (3 / 2 - δ), F s ≠ 0 := fun s hs ↦ hne s (hre12 s hs) (him1 s hs)
   have hFdiff : ∀ s ∈ ball c (3 / 2 - δ), DifferentiableAt ℂ F s := fun s hs ↦
-    hd s (by linarith [hre12 s hs])
+    hd s (by linarith [hre12 s hs]) (him1 s hs)
   have hζd : DifferentiableOn ℂ F (ball c (3 / 2 - δ)) := fun s hs ↦
     (hFdiff s hs).differentiableWithinAt
   have hfd : DifferentiableOn ℂ (fun s ↦ deriv F s / F s) (ball c (3 / 2 - δ)) :=
     (hζd.deriv isOpen_ball).div hζd hne0
   have hcre : c.re = 2 := by simp [hc]
-  obtain ⟨g₀, hg₀exp, hg₀K⟩ := hlog c (by rw [hcre]; norm_num)
-  obtain ⟨g, hgc, hgd⟩ := hfd.isExactOn_ball.with_val_at c g₀
   have hcB : c ∈ ball c (3 / 2 - δ) := mem_ball_self (by linarith)
-  -- ζ * exp (-g) is constant
+  obtain ⟨g₀, hg₀exp, hg₀K⟩ := hlog c (by rw [hcre]; norm_num) (him1 c hcB)
+  obtain ⟨g, hgc, hgd⟩ := hfd.isExactOn_ball.with_val_at c g₀
+  -- `F * exp (-g)` is constant
   have hFd : ∀ s ∈ ball c (3 / 2 - δ),
       HasDerivAt (fun s ↦ F s * Complex.exp (-g s)) 0 s := by
     intro s hs
@@ -132,9 +168,9 @@ theorem exists_log_norm_le_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0
       have hzB := hsub hz
       have hg := hgeo z hzB
       rw [abs_lt, abs_lt] at hg
-      have him1 : 1 ≤ z.im := by linarith [hg.2.1]
       have himt : z.im ≤ t ^ 2 := by nlinarith [hg.2.2]
-      have hb := hgrow z (by linarith [hg.1.1]) (by linarith [hg.1.2]) him1
+      have him0 : 0 ≤ z.im := zero_le_one.trans (him1 z hzB)
+      have hb := hgrow z (by linarith [hg.1.1]) (by linarith [hg.1.2]) (him1 z hzB)
       have hb2 : ‖F z‖ ≤ C₀ * (t ^ 2) ^ A :=
         hb.trans (by gcongr)
       have h := hre_le z hzB _ hb2
@@ -182,7 +218,7 @@ theorem exists_log_norm_le_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0
       rw [sub_re, hcre, abs_le] at h1
       have hzre : 3 / 2 ≤ z.re := by linarith [h1.1]
       have hb : ‖F z‖ ≤ Real.exp K := by
-        obtain ⟨w, hw, hwK⟩ := hlog z hzre
+        obtain ⟨w, hw, hwK⟩ := hlog z hzre (him1 z hzB)
         rw [← hw, Complex.norm_exp]
         exact Real.exp_le_exp.mpr ((re_le_norm _).trans hwK)
       have := hre_le z hzB _ hb
@@ -232,15 +268,15 @@ private lemma exists_mul_rpow_le_mul_add {C ε a : ℝ} (hC : 0 < C) (hε : 0 < 
     have : 0 ≤ ε * L := (mul_pos hε hL).le
     linarith
 
-/-- **Littlewood's bound** for a function `F` that is holomorphic and zero-free on
-`1 / 2 < re s`, of polynomial growth in the strip `1 / 4 ≤ re s ≤ 4`, and with a bounded
-logarithm on `3 / 2 ≤ re s`: for every fixed `1 / 2 < σ ≤ 1` and every `ε > 0` there is a
+/-- **Littlewood's bound** for a function `F` that, in the region `1 ≤ im s`, is holomorphic
+and zero-free on `1 / 2 < re s`, of polynomial growth in the strip `1 / 4 ≤ re s ≤ 4`, and has
+a bounded logarithm on `3 / 2 ≤ re s`: for every fixed `1 / 2 < σ ≤ 1` and every `ε > 0` there is a
 constant `C > 0` such that `‖F (σ + t * I)‖ ≤ C * t ^ ε` for all `t ≥ 3`. -/
 theorem exists_norm_le_mul_rpow_of_half_lt {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0 ≤ A) (hC₀ : 0 < C₀)
-    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → DifferentiableAt ℂ F s)
+    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → 1 ≤ s.im → DifferentiableAt ℂ F s)
     (hgrow : ∀ s : ℂ, 1 / 4 ≤ s.re → s.re ≤ 4 → 1 ≤ s.im → ‖F s‖ ≤ C₀ * s.im ^ A)
-    (hne : ∀ s : ℂ, 1 / 2 < s.re → F s ≠ 0)
-    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) {σ ε : ℝ}
+    (hne : ∀ s : ℂ, 1 / 2 < s.re → 1 ≤ s.im → F s ≠ 0)
+    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → 1 ≤ s.im → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) {σ ε : ℝ}
     (hσ : 1 / 2 < σ) (hσ1 : σ ≤ 1) (hε : 0 < ε) :
     ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 3 ≤ t → ‖F (σ + t * I)‖ ≤ C * t ^ ε := by
   set δ : ℝ := (σ - 1 / 2) / 4 with hδ
@@ -289,14 +325,15 @@ theorem exists_norm_le_mul_rpow_of_half_lt {F : ℂ → ℂ} {A C₀ K : ℝ} (h
     _ = Real.exp K * t ^ ε := by
       rw [Real.rpow_def_of_pos htpos, Real.exp_add, mul_comm ε, mul_comm]
 
-/-- **The Lindelöf bound** for a function `F` that is holomorphic on `1 / 4 ≤ re s`, zero-free
-on `1 / 2 < re s`, of polynomial growth in the strip `1 / 4 ≤ re s ≤ 4`, and with a bounded
-logarithm on `3 / 2 ≤ re s`: `F (1 / 2 + t * I) = O(t ^ ε)` as `t → +∞` for every `ε > 0`. -/
+/-- **The Lindelöf bound** for a function `F` that, in the region `1 ≤ im s`, is holomorphic
+on `1 / 4 ≤ re s`, zero-free on `1 / 2 < re s`, of polynomial growth in the strip
+`1 / 4 ≤ re s ≤ 4`, and has a bounded logarithm on `3 / 2 ≤ re s`:
+`F (1 / 2 + t * I) = O(t ^ ε)` as `t → +∞` for every `ε > 0`. -/
 theorem isBigO_rpow_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0 ≤ A) (hC₀ : 0 < C₀)
-    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → DifferentiableAt ℂ F s)
+    (hd : ∀ s : ℂ, 1 / 4 ≤ s.re → 1 ≤ s.im → DifferentiableAt ℂ F s)
     (hG : ∀ s : ℂ, 1 / 4 ≤ s.re → s.re ≤ 4 → 1 ≤ s.im → ‖F s‖ ≤ C₀ * s.im ^ A)
-    (hne : ∀ s : ℂ, 1 / 2 < s.re → F s ≠ 0)
-    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) :
+    (hne : ∀ s : ℂ, 1 / 2 < s.re → 1 ≤ s.im → F s ≠ 0)
+    (hlog : ∀ s : ℂ, 3 / 2 ≤ s.re → 1 ≤ s.im → ∃ w : ℂ, exp w = F s ∧ ‖w‖ ≤ K) :
     ∀ ε : ℝ, 0 < ε →
       (fun t : ℝ => F (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε := by
   intro ε hε
@@ -324,7 +361,7 @@ theorem isBigO_rpow_of_ne_zero {F : ℂ → ℂ} {A C₀ K : ℝ} (hA : 0 ≤ A)
     have := hG s h1 (by linarith) h3
     exact this.trans (mul_le_mul_of_nonneg_right hC0 (Real.rpow_nonneg h0 _))
   have hdiff : ∀ s : ℂ, (1 / 4 : ℝ) ≤ s.re → s.re ≤ 1 / 2 + η → 1 ≤ s.im →
-      DifferentiableAt ℂ F s := fun s h1 _ _ ↦ hd s h1
+      DifferentiableAt ℂ F s := fun s h1 _ h3 ↦ hd s h1 h3
   have hleft : ∀ t : ℝ, 1 ≤ t → ‖F (((1 / 4 : ℝ) : ℂ) + t * I)‖ ≤ C * t ^ A := by
     intro t ht
     have := hgrow (((1 / 4 : ℝ) : ℂ) + t * I) (by simp) (by simp; linarith) (by simpa using ht)

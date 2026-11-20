@@ -1,5 +1,6 @@
-import RHImpliesLindelof.Dirichlet.General
+import Mathlib.Analysis.Calculus.Deriv.Star
 import RHImpliesLindelof.Dirichlet.Growth
+import RHImpliesLindelof.General
 
 /-!
 # Nonvanishing to the right of the critical line implies Lindelöf for Dirichlet `L`-functions
@@ -66,8 +67,9 @@ theorem lindelof_of_LFunction_ne_zero (χ : DirichletCharacter ℂ N) (hχ : χ 
     ∀ ε : ℝ, 0 < ε →
       (fun t : ℝ => LFunction χ (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε := by
   refine Lindelof.isBigO_rpow_of_ne_zero (A := 1) (C₀ := 20 * (N + 1)) zero_le_one
-    (by positivity) (fun s _ => differentiable_LFunction hχ s) (fun s h1 h2 h3 => ?_) hGRH
-    (fun s hs => ⟨_, ?_, norm_tsum_neg_log_one_sub_mul_prime_cpow_le χ hs⟩)
+    (by positivity) (fun s _ _ => differentiable_LFunction hχ s) (fun s h1 h2 h3 => ?_)
+    (fun s hs _ => hGRH s hs)
+    (fun s hs _ => ⟨_, ?_, norm_tsum_neg_log_one_sub_mul_prime_cpow_le χ hs⟩)
   · have h0 : 0 ≤ s.im := zero_le_one.trans h3
     simpa only [Real.rpow_one, abs_of_nonneg h0] using
       norm_LFunction_le_mul_abs_im hχ h1 h2 (by rwa [abs_of_nonneg h0])
@@ -89,9 +91,9 @@ theorem lindelof_atBot_of_LFunction_ne_zero (χ : DirichletCharacter ℂ N) (hχ
     refine Lindelof.isBigO_rpow_of_ne_zero
       (F := fun s => (starRingEnd ℂ) (LFunction χ ((starRingEnd ℂ) s))) (A := 1)
       (C₀ := 20 * (N + 1)) zero_le_one (by positivity)
-      (fun s _ => differentiableAt_conj_conj_iff.2 (differentiable_LFunction hχ _))
+      (fun s _ _ => differentiableAt_conj_conj_iff.2 (differentiable_LFunction hχ _))
       (fun s h1 h2 h3 => ?_)
-      (fun s hs => ?_) (fun s hs => ⟨(starRingEnd ℂ) _, ?_,
+      (fun s hs _ => ?_) (fun s hs _ => ⟨(starRingEnd ℂ) _, ?_,
         (norm_conj _).le.trans
           (norm_tsum_neg_log_one_sub_mul_prime_cpow_le χ (s := (starRingEnd ℂ) s) hs)⟩) ε hε
     · have h0 : 0 ≤ s.im := zero_le_one.trans h3

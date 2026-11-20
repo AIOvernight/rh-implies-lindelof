@@ -1,6 +1,5 @@
 import Mathlib.Analysis.Complex.Liouville
-import Mathlib.Analysis.Complex.RemovableSingularity
-import RHImpliesLindelof.LogZeta
+import RHImpliesLindelof.General
 
 /-!
 # A one-sided bound for the logarithmic derivative of a holomorphic function

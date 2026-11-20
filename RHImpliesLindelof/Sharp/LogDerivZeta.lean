@@ -1,5 +1,7 @@
+import Mathlib.NumberTheory.EulerProduct.DirichletLSeries
+import RHImpliesLindelof.Growth
+import RHImpliesLindelof.LogZeta
 import RHImpliesLindelof.Sharp.LogDerivLowerBound
-import RHImpliesLindelof.ThreeCircles
 
 /-!
 # The logarithmic derivative of `ζ` to the right of the critical line, under RH

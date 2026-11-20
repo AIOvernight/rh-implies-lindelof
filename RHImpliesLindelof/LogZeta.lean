@@ -1,28 +1,22 @@
-import Mathlib.Analysis.Complex.BorelCaratheodory
-import Mathlib.Analysis.Complex.HasPrimitives
-import Mathlib.NumberTheory.EulerProduct.DirichletLSeries
-import RHImpliesLindelof.Growth
+import Mathlib.NumberTheory.LSeries.RiemannZeta
+import Mathlib.NumberTheory.SumPrimeReciprocals
 
 /-!
-# A bounded branch of `log ζ` under the Riemann Hypothesis
+# The Euler-product logarithm of `ζ` and its non-vanishing under the Riemann Hypothesis
 
-Assuming the Riemann Hypothesis, `ζ` has no zeros in the disc of centre `2 + t * I` and radius
-`3 / 2 - δ` (for `t ≥ 3`), so it has a holomorphic logarithm `g` there. The Borel–Carathéodory
-theorem, together with the polynomial growth of `ζ` and the Euler product on `3 / 2 ≤ re s`,
-bounds `g` on smaller concentric discs.
+This file collects the `ζ`-specific inputs of the abstract Lindelöf bound
+`Lindelof.isBigO_rpow_of_ne_zero`, apart from the growth bound of
+`RHImpliesLindelof/Growth.lean`.
 
 ## Main results
 
 * `Lindelof.norm_tsum_neg_log_one_sub_prime_cpow_le`: a uniform bound for the Euler-product
   logarithm of `ζ` on `3 / 2 ≤ re s`.
-* `Lindelof.borelCaratheodory_closedBall`: the Borel–Carathéodory theorem on a disc with
-  arbitrary centre.
-* `Lindelof.exists_log_riemannZeta_norm_le`: under RH, a holomorphic logarithm `g` of `ζ` on the
-  disc of centre `2 + t * I` and radius `3 / 2 - δ`, with `‖g‖ ≤ C * log t` on the closed disc
-  of radius `3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`.
+* `Lindelof.riemannZeta_ne_zero_of_half_lt_re_of_im_pos`: under RH, `ζ` does not vanish on
+  `1 / 2 < re s`, `0 < im s`.
 -/
 
-open Complex Metric
+open Complex
 
 namespace Lindelof
 
@@ -47,206 +41,18 @@ lemma norm_tsum_neg_log_one_sub_prime_cpow_le {s : ℂ} (hs : 3 / 2 ≤ s.re) :
   rw [norm_neg]
   gcongr
 
-/-- The Borel–Carathéodory theorem on a disc centred at `c`: a bound for `‖f‖` on a closed
-sub-disc in terms of an upper bound for `re f` on the disc and of `‖f c‖`. -/
-lemma borelCaratheodory_closedBall {f : ℂ → ℂ} {c : ℂ} {M R r : ℝ} (hM : 0 < M)
-    (hf : DifferentiableOn ℂ f (ball c R)) (hre : ∀ z ∈ ball c R, (f z).re ≤ M)
-    (hr : 0 ≤ r) (hrR : r < R) {z : ℂ} (hz : z ∈ closedBall c r) :
-    ‖f z‖ ≤ 2 * M * r / (R - r) + ‖f c‖ * (R + r) / (R - r) := by
-  have hR : 0 < R := hr.trans_lt hrR
-  have hmaps : Set.MapsTo (fun w : ℂ ↦ w + c) (ball 0 R) (ball c R) := by
-    intro w hw
-    simpa [dist_eq_norm] using hw
-  have hF : DifferentiableOn ℂ (fun w : ℂ ↦ f (w + c)) (ball 0 R) :=
-    hf.comp (by fun_prop) hmaps
-  have hx : ‖z - c‖ ≤ r := by simpa [dist_eq_norm] using hz
-  have hzc : z - c ∈ ball (0 : ℂ) R := by
-    simpa using hx.trans_lt hrR
-  have key := Complex.borelCaratheodory (f := fun w : ℂ ↦ f (w + c)) hM hF
-    (fun w hw ↦ hre _ (hmaps hw)) hR hzc
-  simp only [sub_add_cancel, zero_add] at key
-  refine key.trans ?_
-  have hd : 0 < R - r := by linarith
-  have hx0 : 0 ≤ ‖z - c‖ := norm_nonneg _
-  have hfc : 0 ≤ ‖f c‖ := norm_nonneg _
-  gcongr
-
-/-- Under the Riemann Hypothesis, for every `0 < δ < 1 / 4` there is a constant `C` such that
-for all `t ≥ 3` the function `ζ` has a holomorphic logarithm `g` on the open disc of centre
-`2 + t * I` and radius `3 / 2 - δ`, satisfying `‖g‖ ≤ C * log t` on the closed disc of radius
-`3 / 2 - 2 * δ` and `‖g‖ ≤ C` on the closed disc of radius `1 / 4`. -/
-theorem exists_log_riemannZeta_norm_le (hRH : RiemannHypothesis) {δ : ℝ} (hδ : 0 < δ)
-    (hδ4 : δ < 1 / 4) :
-    ∃ C : ℝ, 0 < C ∧ ∀ t : ℝ, 3 ≤ t → ∃ g : ℂ → ℂ,
-      DifferentiableOn ℂ g (ball (2 + t * I) (3 / 2 - δ)) ∧
-      (∀ s ∈ ball (2 + t * I) (3 / 2 - δ), exp (g s) = riemannZeta s) ∧
-      (∀ s ∈ closedBall (2 + t * I) (3 / 2 - 2 * δ), ‖g s‖ ≤ C * Real.log t) ∧
-      (∀ s ∈ closedBall (2 + t * I) (1 / 4), ‖g s‖ ≤ C) := by
-  obtain ⟨A, C₀, hA, hC₀, hgrow⟩ := exists_norm_riemannZeta_le_mul_abs_im_rpow
-  set K : ℝ := 3 / 2 * ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) with hKdef
-  have hK : 0 ≤ K := by
-    have : 0 ≤ ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) :=
-      tsum_nonneg fun p ↦ by positivity
-    positivity
-  set L : ℝ := |Real.log C₀| with hLdef
-  have hL : 0 ≤ L := abs_nonneg _
-  refine ⟨6 * (L + 2 * A + 1 + K) / δ + (5 * K + 2), by positivity, fun t ht ↦ ?_⟩
-  set c : ℂ := 2 + t * I with hc
-  have hlog1 : 1 ≤ Real.log t := by
-    rw [Real.le_log_iff_exp_le (by linarith)]
-    exact Real.exp_one_lt_three.le.trans ht
-  -- geometry of the ball
-  have hgeo : ∀ s ∈ ball c (3 / 2 - δ), |s.re - 2| < 3 / 2 - δ ∧ |s.im - t| < 3 / 2 - δ := by
-    intro s hs
-    have hs' : ‖s - c‖ < 3 / 2 - δ := by simpa [dist_eq_norm] using hs
-    have h1 := abs_re_le_norm (s - c)
-    have h2 := abs_im_le_norm (s - c)
-    simp only [hc, sub_re, add_re, mul_re, ofReal_re, I_re, ofReal_im, I_im, sub_im, add_im,
-      mul_im, re_ofNat, im_ofNat] at h1 h2
-    simp only [mul_zero, mul_one, sub_zero, zero_add, add_zero] at h1 h2
-    exact ⟨h1.trans_lt hs', h2.trans_lt hs'⟩
-  have hne1 : ∀ s ∈ ball c (3 / 2 - δ), s ≠ 1 := by
-    intro s hs h
-    have := (hgeo s hs).2
-    rw [h, abs_lt] at this
+/-- Under the Riemann Hypothesis, `ζ` does not vanish at points with `1 / 2 < re s` and
+`0 < im s`. -/
+lemma riemannZeta_ne_zero_of_half_lt_re_of_im_pos (hRH : RiemannHypothesis) {s : ℂ}
+    (hre : 1 / 2 < s.re) (him : 0 < s.im) : riemannZeta s ≠ 0 := by
+  intro h0
+  have h := hRH s h0 (by
+    rintro ⟨n, hn⟩
+    have := congrArg Complex.im hn
     simp at this
-    linarith
-  have hne0 : ∀ s ∈ ball c (3 / 2 - δ), riemannZeta s ≠ 0 := by
-    intro s hs h0
-    have hg := hgeo s hs
-    rw [abs_lt, abs_lt] at hg
-    have him : 0 < s.im := by linarith [hg.2.1]
-    have := hRH s h0 (by
-      rintro ⟨n, hn⟩
-      have := congrArg Complex.im hn
-      simp at this
-      linarith) (hne1 s hs)
-    linarith [hg.1.1]
-  have hζd : DifferentiableOn ℂ riemannZeta (ball c (3 / 2 - δ)) := fun s hs ↦
-    (differentiableAt_riemannZeta (hne1 s hs)).differentiableWithinAt
-  have hfd : DifferentiableOn ℂ (fun s ↦ deriv riemannZeta s / riemannZeta s)
-      (ball c (3 / 2 - δ)) :=
-    (hζd.deriv isOpen_ball).div hζd hne0
-  set g₀ : ℂ := ∑' p : Nat.Primes, -Complex.log (1 - ((p : ℕ) : ℂ) ^ (-c)) with hg₀
-  have hcre : c.re = 2 := by simp [hc]
-  have hg₀exp : Complex.exp g₀ = riemannZeta c :=
-    riemannZeta_eulerProduct_exp_log (by rw [hcre]; norm_num)
-  have hg₀K : ‖g₀‖ ≤ K := norm_tsum_neg_log_one_sub_prime_cpow_le (by rw [hcre]; norm_num)
-  obtain ⟨g, hgc, hgd⟩ := hfd.isExactOn_ball.with_val_at c g₀
-  have hcB : c ∈ ball c (3 / 2 - δ) := mem_ball_self (by linarith)
-  -- ζ * exp (-g) is constant
-  have hFd : ∀ s ∈ ball c (3 / 2 - δ),
-      HasDerivAt (fun s ↦ riemannZeta s * Complex.exp (-g s)) 0 s := by
-    intro s hs
-    have h1 := (differentiableAt_riemannZeta (hne1 s hs)).hasDerivAt
-    have h2 : HasDerivAt (fun x ↦ Complex.exp (-g x))
-        (Complex.exp (-g s) * -(deriv riemannZeta s / riemannZeta s)) s := (hgd s hs).neg.cexp
-    have h3 : HasDerivAt (fun x ↦ riemannZeta x * Complex.exp (-g x))
-        (deriv riemannZeta s * Complex.exp (-g s) +
-          riemannZeta s * (Complex.exp (-g s) * -(deriv riemannZeta s / riemannZeta s))) s :=
-      h1.mul h2
-    have h0 := hne0 s hs
-    refine h3.congr_deriv ?_
-    have e : riemannZeta s * (Complex.exp (-g s) * -(deriv riemannZeta s / riemannZeta s))
-        = -(deriv riemannZeta s * Complex.exp (-g s)) := by
-      field_simp
-    rw [e]; ring
-  have hexp : ∀ s ∈ ball c (3 / 2 - δ), Complex.exp (g s) = riemannZeta s := by
-    intro s hs
-    have hconst := isOpen_ball.is_const_of_deriv_eq_zero
-      (convex_ball c (3 / 2 - δ)).isPreconnected
-      (fun x hx ↦ (hFd x hx).differentiableAt.differentiableWithinAt)
-      (fun x hx ↦ (hFd x hx).deriv) hs hcB
-    rw [hgc, ← hg₀exp, ← Complex.exp_add, add_neg_cancel, Complex.exp_zero] at hconst
-    have : riemannZeta s * Complex.exp (-g s) * Complex.exp (g s) = Complex.exp (g s) := by
-      rw [hconst, one_mul]
-    rw [← this, mul_assoc, ← Complex.exp_add, neg_add_cancel, Complex.exp_zero, mul_one]
-  have hgdiff : DifferentiableOn ℂ g (ball c (3 / 2 - δ)) := fun s hs ↦
-    (hgd s hs).differentiableAt.differentiableWithinAt
-  have hre_le : ∀ s ∈ ball c (3 / 2 - δ), ∀ X : ℝ, ‖riemannZeta s‖ ≤ X →
-      (g s).re ≤ Real.log X := by
-    intro s hs X hX
-    rw [← hexp s hs, Complex.norm_exp] at hX
-    rw [Real.le_log_iff_exp_le ((Real.exp_pos _).trans_le hX)]
-    exact hX
-  refine ⟨g, hgdiff, hexp, ?_, ?_⟩
-  · -- outer bound
-    intro s hs
-    set M : ℝ := L + 2 * A * Real.log t + 1 with hM
-    have hMpos : 0 < M := by positivity
-    have hsub : ball c (3 / 2 - 3 * δ / 2) ⊆ ball c (3 / 2 - δ) :=
-      ball_subset_ball (by linarith)
-    have hre : ∀ z ∈ ball c (3 / 2 - 3 * δ / 2), (g z).re ≤ M := by
-      intro z hz
-      have hzB := hsub hz
-      have hg := hgeo z hzB
-      rw [abs_lt, abs_lt] at hg
-      have him1 : 1 ≤ |z.im| := by
-        rw [abs_of_pos (by linarith [hg.2.1])]; linarith [hg.2.1]
-      have himt : |z.im| ≤ t ^ 2 := by
-        rw [abs_of_pos (by linarith [hg.2.1])]; nlinarith [hg.2.2]
-      have hb := hgrow z (by linarith [hg.1.1]) (by linarith [hg.1.2]) him1
-      have hb2 : ‖riemannZeta z‖ ≤ C₀ * (t ^ 2) ^ A :=
-        hb.trans (by gcongr)
-      have h := hre_le z hzB _ hb2
-      have ht0 : (0 : ℝ) < t := by linarith
-      rw [Real.log_mul hC₀.ne' (by positivity), Real.log_rpow (by positivity),
-        Real.log_pow] at h
-      have := le_abs_self (Real.log C₀)
-      rw [hM, hLdef]
-      push_cast at h
-      linarith
-    have hbc := borelCaratheodory_closedBall (r := 3 / 2 - 2 * δ) hMpos (hgdiff.mono hsub) hre
-      (by linarith) (by linarith) hs
-    rw [hgc] at hbc
-    have e1 : (3 / 2 - 3 * δ / 2) - (3 / 2 - 2 * δ) = δ / 2 := by ring
-    rw [e1] at hbc
-    refine hbc.trans ?_
-    have hMle : M ≤ (L + 2 * A + 1) * Real.log t := by
-      rw [hM]; nlinarith
-    have hd2 : 0 < δ / 2 := by positivity
-    have s1 : 2 * M * (3 / 2 - 2 * δ) / (δ / 2) ≤ 6 * ((L + 2 * A + 1) * Real.log t) / δ := by
-      rw [div_le_div_iff₀ hd2 hδ]
-      nlinarith [mul_nonneg hMpos.le hδ.le, mul_le_mul_of_nonneg_right hMle hδ.le]
-    have s2 : ‖g₀‖ * (3 / 2 - 3 * δ / 2 + (3 / 2 - 2 * δ)) / (δ / 2) ≤
-        6 * (K * Real.log t) / δ := by
-      rw [div_le_div_iff₀ hd2 hδ]
-      have : K ≤ K * Real.log t := by nlinarith
-      have h' : ‖g₀‖ ≤ K * Real.log t := hg₀K.trans this
-      nlinarith [mul_nonneg (norm_nonneg g₀) hδ.le, mul_le_mul_of_nonneg_right h' hδ.le,
-        norm_nonneg g₀]
-    have s3 : 0 ≤ (5 * K + 2) * Real.log t := by positivity
-    calc _ ≤ 6 * ((L + 2 * A + 1) * Real.log t) / δ + 6 * (K * Real.log t) / δ :=
-          add_le_add s1 s2
-      _ ≤ (6 * (L + 2 * A + 1 + K) / δ + (5 * K + 2)) * Real.log t := by
-        have : 6 * ((L + 2 * A + 1) * Real.log t) / δ + 6 * (K * Real.log t) / δ
-            = 6 * (L + 2 * A + 1 + K) / δ * Real.log t := by ring
-        rw [this]; linarith
-  · -- inner bound
-    intro s hs
-    have hsub : ball c (1 / 2) ⊆ ball c (3 / 2 - δ) := ball_subset_ball (by linarith)
-    have hre : ∀ z ∈ ball c (1 / 2), (g z).re ≤ K + 1 := by
-      intro z hz
-      have hzB := hsub hz
-      have hz' : ‖z - c‖ < 1 / 2 := by simpa [dist_eq_norm] using hz
-      have h1 := abs_re_le_norm (z - c)
-      rw [sub_re, hcre, abs_le] at h1
-      have hzre : 3 / 2 ≤ z.re := by linarith [h1.1]
-      have hb : ‖riemannZeta z‖ ≤ Real.exp K := by
-        rw [← riemannZeta_eulerProduct_exp_log (by linarith), Complex.norm_exp]
-        exact Real.exp_le_exp.mpr
-          ((re_le_norm _).trans (norm_tsum_neg_log_one_sub_prime_cpow_le hzre))
-      have := hre_le z hzB _ hb
-      rw [Real.log_exp] at this
-      linarith
-    have hbc := borelCaratheodory_closedBall (r := 1 / 4) (by positivity) (hgdiff.mono hsub) hre
-      (by norm_num) (by norm_num) hs
-    rw [hgc] at hbc
-    refine hbc.trans ?_
-    have : (0 : ℝ) ≤ 6 * (L + 2 * A + 1 + K) / δ := by positivity
-    have e : 2 * (K + 1) * (1 / 4) / (1 / 2 - 1 / 4) + ‖g₀‖ * (1 / 2 + 1 / 4) / (1 / 2 - 1 / 4)
-        = 2 * (K + 1) + 3 * ‖g₀‖ := by ring
-    rw [e]
-    linarith
+    linarith) (by
+    rintro rfl
+    simp at him)
+  linarith
 
 end Lindelof

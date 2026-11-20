@@ -1,4 +1,3 @@
-import Mathlib.Analysis.InnerProductSpace.Calculus
 import RHImpliesLindelof.Sharp.LogDerivZeta
 
 /-!
