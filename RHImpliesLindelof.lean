@@ -1,5 +1,6 @@
 import RHImpliesLindelof.Main
 import RHImpliesLindelof.Dirichlet.Main
+import RHImpliesLindelof.Dirichlet.Uniform
 import RHImpliesLindelof.Sharp.Main
 import RHImpliesLindelof.Sharp.AtBot
 import RHImpliesLindelof.Sharp.DirichletMain

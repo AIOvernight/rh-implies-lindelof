@@ -8,4 +8,5 @@ import RHImpliesLindelof
 #print axioms DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero
 #print axioms DirichletCharacter.exists_norm_LFunction_le_exp_log_div_log_log
 #print axioms DirichletCharacter.exists_norm_LFunction_le_exp_log_div_log_log_atBot
+#print axioms DirichletCharacter.exists_norm_LFunction_le_mul_rpow_uniform
 #print axioms lindelof_iff_integral_norm_riemannZeta_pow_isBigO
