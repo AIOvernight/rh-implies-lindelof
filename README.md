@@ -2,11 +2,12 @@
 
 [![CI](https://github.com/AIOvernight/rh-implies-lindelof/actions/workflows/ci.yml/badge.svg)](https://github.com/AIOvernight/rh-implies-lindelof/actions/workflows/ci.yml)
 
-A Lean 4 / Mathlib formalization of three classical consequences of a zero-free half-plane `Re s > 1/2`:
+A Lean 4 / Mathlib formalization of results around the Lindelöf Hypothesis:
 
 1. the Riemann Hypothesis implies the Lindelöf Hypothesis for ζ;
-2. the Riemann Hypothesis implies Littlewood's sharper bound `|ζ(1/2 + it)| ≤ exp(C log t / log log t)`;
-3. for a non-trivial Dirichlet character, non-vanishing of `L(s, χ)` for `Re s > 1/2` implies the Lindelöf bound for `L(1/2 + it, χ)`.
+2. the Riemann Hypothesis implies Littlewood's sharper bound `|ζ(1/2 + it)| ≤ exp(C log |t| / log log |t|)`;
+3. for a non-trivial Dirichlet character, non-vanishing of `L(s, χ)` for `Re s > 1/2` implies both bounds for `L(1/2 + it, χ)`;
+4. the Lindelöf Hypothesis is equivalent to the bound `O(T^(1+ε))` for every even moment of ζ on the critical line (no hypothesis).
 
 ## Statements
 
@@ -31,15 +32,26 @@ theorem DirichletCharacter.lindelof_of_LFunction_ne_zero {N : ℕ} [NeZero N]
       (fun t : ℝ => LFunction χ (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε
 ```
 
-together with `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t → −∞`.
+together with `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t → −∞`, the sharper bound as `t → −∞` (`exists_norm_riemannZeta_le_exp_log_div_log_log_atBot_of_riemannHypothesis`), and the sharper bound for `L(s, χ)` in both directions (`DirichletCharacter.exists_norm_LFunction_le_exp_log_div_log_log`, `…_atBot`).
+
+The equivalence with moments, which assumes nothing:
+
+```lean
+theorem lindelof_iff_integral_norm_riemannZeta_pow_isBigO :
+    (∀ ε : ℝ, 0 < ε →
+      (fun t : ℝ => riemannZeta (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε) ↔
+    ∀ (k : ℕ) (ε : ℝ), 0 < ε →
+      (fun T : ℝ => ∫ t in (1 : ℝ)..T, ‖riemannZeta (1 / 2 + t * I)‖ ^ (2 * k))
+        =O[Filter.atTop] fun T : ℝ => T ^ (1 + ε)
+```
 
 `RiemannHypothesis`, `riemannZeta` and `DirichletCharacter.LFunction` are Mathlib's own definitions. The statements use nothing defined in this repository.
 
 ## What this is, and what it is not
 
-- **These are conditional theorems.** Each one says "if there are no zeros with `Re s > 1/2`, then …". Nothing here proves RH, GRH or Lindelöf.
+- **Nothing here proves RH, GRH or Lindelöf.** Results 1–3 say "if there are no zeros with `Re s > 1/2`, then …". Result 4 is an equivalence between two open statements.
 - **The mathematics is classical.** The implication RH ⇒ Lindelöf and the sharper bound are usually attributed to Littlewood; a textbook account is Chapter XIV of Titchmarsh, *The Theory of the Riemann Zeta-Function*. The contribution here is the machine-checked proof.
-- **Scope.** For ζ: the Lindelöf bound as `t → ±∞` and the sharper bound as `t → +∞`. For Dirichlet L-functions: the Lindelöf bound as `t → ±∞` for a fixed non-trivial character, with an implied constant depending on the character. Not included: the sharper bound for L-functions, the conductor aspect, and L-functions of higher degree.
+- **Scope.** For ζ and for a fixed non-trivial Dirichlet character: the Lindelöf bound and the sharper bound, as `t → ±∞`. For L-functions the implied constants depend on the character. Not included: uniformity in the conductor, and L-functions of higher degree. Of the classical equivalent forms of the Lindelöf Hypothesis only the one with moments is here (not Backlund's form in terms of zero counts, nor the implication to the density hypothesis).
 - **Prior work.** Searched on 2026-11-21 in Mathlib and its pull requests, PrimeNumberTheoremAnd, [analytic-number-theory-lean](https://github.com/jonhanke/analytic-number-theory-lean), [Tau Ceti](https://github.com/TauCetiProject/TauCeti), about 130 GitHub repository searches and the Palomar registry. What already existed:
   - **The analytic engine.** Bounding a logarithm of a zero-free function on discs by Borel–Carathéodory and then interpolating (Hadamard) is in OpenAI's [math](https://github.com/openai/math) repository (`OAI.SevenEighths.LogarithmicControl`: `borel_caratheodory_closedBall`, `three_circles`, `logarithmic_control`), which predates this one. So the three-circles theorem is **not** new here; Mathlib itself has only the three-lines version.
   - **To the right of the critical line.** Qamar Munawer's [RiemannBlueprint](https://github.com/Qamarbajwa/RiemannBlueprint) proves, under RH, a bound `t^δ` for `1/ζ(s)` on `Re s ≥ σ₀ > 1/2` by the same method (and uses it for the Mertens function). [anaxia-research/Breakthrough-problems-3](https://github.com/anaxia-research/Breakthrough-problems-3) (`Vinogradov.CharSum.norm_bound`) proves, for a non-principal character with no zeros in `Re s > a + 2e`, a bound `(q(3 + |t|)²)^ε` for `L(s, χ)` and its inverse on `Re s ≥ a + 8e`, uniformly in the modulus. Those are Lindelöf-type bounds strictly to the right of `Re s = 1/2`.
@@ -49,9 +61,9 @@ together with `DirichletCharacter.lindelof_atBot_of_LFunction_ne_zero` for `t �
 ## Verification status
 
 - `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if any main theorem uses a non-standard axiom.
-- `#print axioms` on all five theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
+- `#print axioms` on all nine theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all twelve modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all sixteen modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -83,6 +95,8 @@ lake env leanchecker RHImpliesLindelof.Main
 3. Hadamard's three-circles theorem gives `‖g‖ ≤ C (log t)^a` with `a < 1`, hence `F(σ + it) ≪ t^ε` for each fixed `σ > 1/2`.
 4. A Phragmén–Lindelöf interpolation on a half-strip, between `σ = 1/4` and `σ = 1/2 + η`, letting `η → 0`.
 
+**Moments.** If Lindelöf holds, integrate the bound. Conversely, `ζ'(1/2 + it) = O(t)` by a Cauchy estimate, so if `|ζ(1/2 + it)| = M` then `|ζ| ≥ M/2` on an interval of length about `M/t` after `t`; hence `M^(2k+1) ≪ t · ∫₁^(t+1) |ζ|^(2k)`, and letting `k → ∞` gives `M ≪ t^ε`.
+
 **Sharper bound.** A different argument, through `ζ'/ζ` instead of `log ζ`: a lower bound `Re ζ'/ζ(s) ≥ −A log t` to the right of the critical line (a one-sided Landau lemma, dividing out zeros with Blaschke factors), its decay away from the line by three circles, and integration towards the line. A paper proof with all constants tracked is in `RHImpliesLindelof/Sharp/NOTES.md`.
 
 | File | Content |
@@ -99,12 +113,16 @@ lake env leanchecker RHImpliesLindelof.Main
 | `Sharp/LogDerivLowerBound.lean` | One-sided Landau lemma: a lower bound for `Re f'/f` to the right of the zeros of `f` |
 | `Sharp/LogDerivZeta.lean` | Under RH, the lower bound for `Re ζ'/ζ` and its decay away from the critical line |
 | `Sharp/Main.lean` | The sharper bound for ζ |
+| `Sharp/AtBot.lean` | The sharper bound for ζ as `t → −∞` |
+| `Sharp/DirichletGeneral.lean` | The sharper bound for an abstract `F` (zero-free for `Re s > 1/2`, polynomial growth, bounded above and below for `Re s ≥ 3/2`) |
+| `Sharp/DirichletMain.lean` | The sharper bound for `L(s, χ)` |
+| `Moments.lean` | The Lindelöf Hypothesis is equivalent to `∫₁ᵀ |ζ(1/2 + it)|^(2k) dt = O(T^(1+ε))` for all `k` |
 
 `ThreeCircles.lean`, `HalfStrip.lean`, `BorelCaratheodory.lean` and `Sharp/LogDerivLowerBound.lean` are general complex analysis: they do not mention ζ and import nothing from this repository beyond each other (the last one imports only `BorelCaratheodory.lean`).
 
 ## How it was produced
 
-Everything in this repository was written by Claude (Anthropic) in a single Claude Code session directed by the repository owner. Claude chose the proof strategy and split the work; Claude subagents, several of them in parallel, wrote the Lean proofs, including the Dirichlet extension, the sharper bound and the two later refactors (towards Mathlib style, and to derive the ζ case from the abstract theorem). For the sharper bound the subagent found that the suggested route could not give the stated bound and replaced it with the `ζ'/ζ` argument above.
+Everything in this repository was written by Claude (Anthropic) in a single Claude Code session directed by the repository owner. Claude chose the proof strategy and split the work; Claude subagents, several of them in parallel, wrote the Lean proofs, including the Dirichlet extensions, the sharper bound, the equivalence with moments and the two later refactors (towards Mathlib style, and to derive the ζ case from the abstract theorem). For the sharper bound the subagent found that the suggested route could not give the stated bound and replaced it with the `ζ'/ζ` argument above.
 
 All of it was checked by the Lean kernel. **No part of the Lean code has been written or reviewed line by line by a human.**
 
