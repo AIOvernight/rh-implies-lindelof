@@ -10,3 +10,4 @@ import RHImpliesLindelof
 #print axioms DirichletCharacter.exists_norm_LFunction_le_exp_log_div_log_log_atBot
 #print axioms DirichletCharacter.exists_norm_LFunction_le_mul_rpow_uniform
 #print axioms lindelof_iff_integral_norm_riemannZeta_pow_isBigO
+#print axioms lindelof_iff_riemannZeta_zeros_isLittleO_log

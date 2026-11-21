@@ -8,7 +8,8 @@ A Lean 4 / Mathlib formalization of results around the Lindelöf Hypothesis:
 2. the Riemann Hypothesis implies Littlewood's sharper bound `|ζ(1/2 + it)| ≤ exp(C log |t| / log log |t|)`;
 3. for a non-trivial Dirichlet character, non-vanishing of `L(s, χ)` for `Re s > 1/2` implies both bounds for `L(1/2 + it, χ)`;
 4. the same Lindelöf bound for `L(1/2 + it, χ)` uniformly in the modulus and in `t`;
-5. the Lindelöf Hypothesis is equivalent to the bound `O(T^(1+ε))` for every even moment of ζ on the critical line (no hypothesis).
+5. the Lindelöf Hypothesis is equivalent to the bound `O(T^(1+ε))` for every even moment of ζ on the critical line (no hypothesis);
+6. the Lindelöf Hypothesis is equivalent to Backlund's condition: for every `σ > 1/2`, the number of zeros of ζ with `Re ρ > σ` and `T < Im ρ ≤ T + 1` is `o(log T)` (no hypothesis).
 
 ## Statements
 
@@ -56,13 +57,27 @@ theorem lindelof_iff_integral_norm_riemannZeta_pow_isBigO :
         =O[Filter.atTop] fun T : ℝ => T ^ (1 + ε)
 ```
 
+Backlund's form, which also assumes nothing:
+
+```lean
+theorem lindelof_iff_riemannZeta_zeros_isLittleO_log :
+    (∀ ε : ℝ, 0 < ε →
+      (fun t : ℝ => riemannZeta (1 / 2 + t * I)) =O[Filter.atTop] fun t : ℝ => t ^ ε) ↔
+    ∀ σ : ℝ, 1 / 2 < σ →
+      (fun T : ℝ =>
+        ((∑ᶠ ρ ∈ {ρ : ℂ | riemannZeta ρ = 0 ∧ σ < ρ.re ∧ T < ρ.im ∧ ρ.im ≤ T + 1},
+          (analyticOrderAt riemannZeta ρ).toNat : ℕ) : ℝ)) =o[Filter.atTop] Real.log
+```
+
+Zeros are counted with multiplicity, as the sum of the orders of vanishing. Two conventions of Mathlib are harmless here: a `∑ᶠ` over an infinite set is `0`, but the set of zeros in the box is proved finite for large `T` (`Lindelof.exists_finite_zetaZeroBox`); and `toNat` of an infinite order is `0`, but ζ does not vanish identically near any point.
+
 `RiemannHypothesis`, `riemannZeta` and `DirichletCharacter.LFunction` are Mathlib's own definitions. The statements use nothing defined in this repository.
 
 ## What this is, and what it is not
 
-- **Nothing here proves RH, GRH or Lindelöf.** Results 1–4 say "if there are no zeros with `Re s > 1/2`, then …". Result 5 is an equivalence between two open statements.
+- **Nothing here proves RH, GRH or Lindelöf.** Results 1–4 say "if there are no zeros with `Re s > 1/2`, then …". Results 5 and 6 are equivalences between open statements.
 - **The mathematics is classical.** The implication RH ⇒ Lindelöf and the sharper bound are usually attributed to Littlewood; a textbook account is Chapter XIV of Titchmarsh, *The Theory of the Riemann Zeta-Function*. The contribution here is the machine-checked proof.
-- **Scope.** For ζ and for a fixed non-trivial Dirichlet character: the Lindelöf bound and the sharper bound, as `t → ±∞`. For the Lindelöf bound there is also a version uniform in the modulus `N` and in `t`; it is stated for an arbitrary non-principal character mod `N` and in terms of `N`, not of the conductor of `χ`, and the sharper bound is not uniform in `N`. Not included: L-functions of higher degree. Of the classical equivalent forms of the Lindelöf Hypothesis only the one with moments is here (not Backlund's form in terms of zero counts, nor the implication to the density hypothesis).
+- **Scope.** For ζ and for a fixed non-trivial Dirichlet character: the Lindelöf bound and the sharper bound, as `t → ±∞`. For the Lindelöf bound there is also a version uniform in the modulus `N` and in `t`; it is stated for an arbitrary non-principal character mod `N` and in terms of `N`, not of the conductor of `χ`, and the sharper bound is not uniform in `N`. Not included: L-functions of higher degree. Two classical equivalent forms of the Lindelöf Hypothesis are here (moments, and Backlund's zero counts); the implication from Lindelöf to the density hypothesis is not.
 - **Prior work.** Searched on 2026-11-21 in Mathlib and its pull requests, PrimeNumberTheoremAnd, [analytic-number-theory-lean](https://github.com/jonhanke/analytic-number-theory-lean), [Tau Ceti](https://github.com/TauCetiProject/TauCeti), about 130 GitHub repository searches and the Palomar registry. What already existed:
   - **The analytic engine.** Bounding a logarithm of a zero-free function on discs by Borel–Carathéodory and then interpolating (Hadamard) is in OpenAI's [math](https://github.com/openai/math) repository (`OAI.SevenEighths.LogarithmicControl`: `borel_caratheodory_closedBall`, `three_circles`, `logarithmic_control`), which predates this one. So the three-circles theorem is **not** new here; Mathlib itself has only the three-lines version.
   - **To the right of the critical line.** Qamar Munawer's [RiemannBlueprint](https://github.com/Qamarbajwa/RiemannBlueprint) proves, under RH, a bound `t^δ` for `1/ζ(s)` on `Re s ≥ σ₀ > 1/2` by the same method (and uses it for the Mertens function). [anaxia-research/Breakthrough-problems-3](https://github.com/anaxia-research/Breakthrough-problems-3) (`Vinogradov.CharSum.norm_bound`) proves, for a non-principal character with no zeros in `Re s > a + 2e`, a bound `(q(3 + |t|)²)^ε` for `L(s, χ)` and its inverse on `Re s ≥ a + 8e`, uniformly in the modulus. Those are Lindelöf-type bounds strictly to the right of `Re s = 1/2`.
@@ -72,9 +87,9 @@ theorem lindelof_iff_integral_norm_riemannZeta_pow_isBigO :
 ## Verification status
 
 - `lake build` succeeds with Lean `v4.33.1` and Mathlib at `0df444a360eaa60ab8c11dca51a86af692955474`. CI rebuilds from scratch on every push, scans the sources for `sorry` and escape hatches, and fails if any main theorem uses a non-standard axiom.
-- `#print axioms` on all ten theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
+- `#print axioms` on all eleven theorems reports only `propext`, `Classical.choice`, `Quot.sound`.
 - No `sorry`, `axiom`, `native_decide`, `unsafe`, `implemented_by`, `@[extern]`, `opaque` or `set_option` anywhere in the sources.
-- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all twenty modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
+- Replayed through the kernel with `leanchecker` (the checker bundled with the toolchain): all twenty-five modules containing declarations pass. This re-checks the declarations of this repository and trusts the compiled Mathlib from the official cache.
 - Not yet reviewed by a human expert.
 
 ## How to check it yourself
@@ -108,6 +123,8 @@ lake env leanchecker RHImpliesLindelof.Main
 
 **Uniform bound.** Every constant of the argument is tracked. To go from `Re s = 1/2 + θ` to `Re s = 1/2` uniformly, fix the target height `t₀`, put `Q = N(|t₀| + 2)` and apply Mathlib's three-lines theorem on the strip `1/4 ≤ Re z ≤ 1/2 + θ` to `L(z, χ) · Q^(−λ(z)) / (z − 1/4 + 1 − i t₀)` with `λ` affine; the denominator absorbs the growth in `|t − t₀|`. A paper proof is in `RHImpliesLindelof/Dirichlet/UniformNOTES.md`.
 
+**Backlund's form.** If Lindelöf holds, then `ζ(s) ≪ t^η` on `Re s ≥ 1/2`, and a Jensen-type bound on a disc centred far to the right gives at most `(η log T + O(1))/c` zeros in the box, for every `η`. Conversely, divide ζ on a disc centred at `2 + it` by the product over its zeros there; the quotient is zero-free and still bounded by `exp(O(log t))`, so the logarithm argument used for RH applies to it, and since the number of zeros is `o(log t)` the product changes the bound only by a factor `exp(o(log t))`. A paper proof is in `RHImpliesLindelof/Backlund/NOTES.md`.
+
 **Moments.** If Lindelöf holds, integrate the bound. Conversely, `ζ'(1/2 + it) = O(t)` by a Cauchy estimate, so if `|ζ(1/2 + it)| = M` then `|ζ| ≥ M/2` on an interval of length about `M/t` after `t`; hence `M^(2k+1) ≪ t · ∫₁^(t+1) |ζ|^(2k)`, and letting `k → ∞` gives `M ≪ t^ε`.
 
 **Sharper bound.** A different argument, through `ζ'/ζ` instead of `log ζ`: a lower bound `Re ζ'/ζ(s) ≥ −A log t` to the right of the critical line (a one-sided Landau lemma, dividing out zeros with Blaschke factors), its decay away from the line by three circles, and integration towards the line. A paper proof with all constants tracked is in `RHImpliesLindelof/Sharp/NOTES.md`.
@@ -133,13 +150,18 @@ lake env leanchecker RHImpliesLindelof.Main
 | `Sharp/AtBot.lean` | The sharper bound for ζ as `t → −∞` |
 | `Sharp/DirichletGeneral.lean` | The sharper bound for an abstract `F` (zero-free for `Re s > 1/2`, polynomial growth, bounded above and below for `Re s ≥ 3/2`) |
 | `Sharp/DirichletMain.lean` | The sharper bound for `L(s, χ)` |
+| `Backlund/ZeroFactorization.lean` | A holomorphic function bounded on a disc factors as a product over its zeros in a smaller disc times a zero-free function; Jensen-type bound for the number of zeros |
+| `Backlund/Convexity.lean` | Lindelöf implies `ζ(s) ≪ (Im s)^η` on the whole region `Re s ≥ 1/2`; bounds on every line `Re s = σ > 1/2` imply Lindelöf |
+| `Backlund/ZeroCount.lean` | Finiteness of the set of zeros in a box; Lindelöf implies Backlund's condition |
+| `Backlund/Local.lean` | A bound for ζ at a point in terms of the number of zeros in four nearby boxes |
+| `Backlund/Main.lean` | Backlund's condition implies Lindelöf; the equivalence |
 | `Moments.lean` | The Lindelöf Hypothesis is equivalent to `∫₁ᵀ |ζ(1/2 + it)|^(2k) dt = O(T^(1+ε))` for all `k` |
 
 `ThreeCircles.lean`, `HalfStrip.lean`, `BorelCaratheodory.lean` and `Sharp/LogDerivLowerBound.lean` are general complex analysis: they do not mention ζ and import nothing from this repository beyond each other (the last one imports only `BorelCaratheodory.lean`).
 
 ## How it was produced
 
-Everything in this repository was written by Claude (Anthropic) in a single Claude Code session directed by the repository owner. Claude chose the proof strategy and split the work; Claude subagents, several of them in parallel, wrote the Lean proofs, including the Dirichlet extensions, the sharper bound, the uniform bound, the equivalence with moments and the two later refactors (towards Mathlib style, and to derive the ζ case from the abstract theorem). For the sharper bound the subagent found that the suggested route could not give the stated bound and replaced it with the `ζ'/ζ` argument above.
+Everything in this repository was written by Claude (Anthropic) in a single Claude Code session directed by the repository owner. Claude chose the proof strategy and split the work; Claude subagents, several of them in parallel, wrote the Lean proofs, including the Dirichlet extensions, the sharper bound, the uniform bound, the equivalences with moments and with Backlund's condition, and the two later refactors (towards Mathlib style, and to derive the ζ case from the abstract theorem). For the sharper bound the subagent found that the suggested route could not give the stated bound and replaced it with the `ζ'/ζ` argument above.
 
 All of it was checked by the Lean kernel. **No part of the Lean code has been written or reviewed line by line by a human.**
 
